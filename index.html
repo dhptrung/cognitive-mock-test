@@ -182,6 +182,22 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .namefield .err{color:var(--bad); font-size:.92rem}
 .sheet.resume{border:2px solid var(--ink); margin-bottom:18px}
 .sheet.resume h3{margin-bottom:4px}
+a{color:var(--ink); text-underline-offset:2px}
+.gsec{margin-top:34px; scroll-margin-top:70px}
+.gsec h2{font-size:1.7rem}
+.gintro{max-width:68ch; margin:12px 0 16px}
+.gsteps{margin:8px 0 0; padding-left:1.3em} .gsteps li{margin:6px 0}
+.gtoc{columns:2; column-gap:24px; margin:8px 0 0; padding-left:1.2em} .gtoc li{margin:3px 0}
+.gtype{background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:18px 20px; margin-top:16px; scroll-margin-top:70px}
+.gtype h4{font-family:var(--display); font-size:1.15rem; color:var(--ink); display:flex; gap:10px; align-items:center; margin:0 0 6px}
+.gnum{flex:none; width:28px; height:28px; border-radius:50%; background:var(--ink); color:var(--card); display:grid; place-items:center; font-size:.9rem}
+.gtype > p{margin:0 0 10px; max-width:72ch}
+.gex,.gsol{border-top:1px dashed var(--line); padding-top:12px; margin-top:12px}
+.gex p{margin:0 0 6px}
+.glabel{display:inline-block; font-size:.78rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:8px}
+.gsol ol{margin:0; padding-left:1.3em} .gsol li{margin:4px 0}
+.gtrap{background:var(--bad-bg); border-radius:8px; padding:10px 12px; margin:12px 0 0}
+@media (max-width:560px){.gtoc{columns:1} .gtype{padding:14px}}
 .btn.danger{border-color:var(--bad); color:var(--bad)}
 @media (max-width:560px){.trends{grid-template-columns:minmax(0,1fr)} .hist .secmini{display:none} .hist td{font-size:.9rem} .hist .acts .btn{display:block; width:100%; padding:6px 10px} .hist .acts .btn + .btn{margin:6px 0 0}}
 @media (max-width:560px){.foot{flex-wrap:wrap} .foot .kbd{display:none} .foot #ok{flex:1 0 100%; order:-1}}
@@ -487,6 +503,172 @@ function build(def,level){
   return part(level,n);
 }
 
+/* ---------- numerical: hàm sinh câu mới ----------
+   Dùng helper có sẵn trong index.html: R, pick, shuffle, fmt, mc, signed.
+   Cách ghép: nối từng mảng vào NUM tương ứng, ví dụ
+     NUM.easy.push(...NUM_NEW.easy); NUM.medium.push(...NUM_NEW.medium); NUM.hard.push(...NUM_NEW.hard);
+   hoặc dán trực tiếp các hàm vào mảng easy/medium/hard của NUM.
+   Mỗi hàm trả về {q, opts, ans, exp} (có thể kèm table:{head,rows}) đúng như các hàm hiện có. */
+const NUM_NEW={
+easy:[
+ // [easy] Tỷ lệ phần trăm của một phần trên tổng
+ ()=>{const p=pick([10,15,20,25,30,35,40,45,60,75]),T=R(2,20)*20,part=T*p/100,rest=Math.round(part/(T-part)*1000)/10,alt=rest<100?rest:p+10;
+  return{q:`Of the ${fmt(T)} employees at a company, ${fmt(part)} work fully remotely. What percentage of employees work fully remotely?`,...mc(p,[100-p,alt,p+5,p-5],v=>fmt(v)+'%'),exp:`Lấy phần chia cho tổng: ${fmt(part)} ÷ ${fmt(T)} = ${p/100} = ${p}%. Lỗi hay gặp là chia cho số người còn lại (${fmt(part)} ÷ ${fmt(T-part)}) hoặc lấy 100% trừ đi đáp án.`}},
+ // [easy] Đọc bảng, tính trung bình
+ ()=>{const days=['Mon','Tue','Wed','Thu','Fri'],v=days.map(()=>R(10,60)*10),sum=v.reduce((a,b)=>a+b,0),avg=sum/5,srt=v.slice().sort((a,b)=>a-b),med=srt[2];
+  return{q:`The table shows the number of visitors to a showroom each day last week. What was the average number of visitors per day?`,table:{head:['Day','Visitors'],rows:days.map((d,i)=>[d,fmt(v[i])])},...mc(avg,[med,Math.round(sum/4),srt[4]-srt[0],avg+10]),exp:`Tổng 5 ngày: ${v.join(' + ')} = ${fmt(sum)}. Trung bình: ${fmt(sum)} ÷ 5 = ${fmt(avg)}.`}},
+ // [easy] Lãi đơn
+ ()=>{const P=R(2,20)*1000,r=pick([3,4,5,6,8]),y=pick([2,3,4]),I=P*r*y/100,comp=Math.round(P*((1+r/100)**y-1)*100)/100;
+  return{q:`$${fmt(P)} is deposited in an account paying ${r}% simple interest per year. How much interest is earned in total after ${y} years?`,...mc(I,[P*r/100,comp,P+I,I*2],v=>'$'+fmt(v)),exp:`Lãi đơn mỗi năm: $${fmt(P)} × ${r}% = $${fmt(P*r/100)}. Sau ${y} năm: $${fmt(P*r/100)} × ${y} = $${fmt(I)}. Lãi đơn không cộng dồn lãi vào gốc (nếu tính lãi kép sẽ ra $${fmt(comp)}).`}},
+],
+medium:[
+ // [medium] Trung bình có trọng số
+ ()=>{const w=pick([[40,30,30],[50,30,20],[50,25,25],[60,20,20],[20,30,50]]),names=['Written test','Interview','Case study'],s=w.map(()=>R(50,95)),wa=Math.round(w.reduce((a,x,i)=>a+x*s[i],0))/100,sa=Math.round(s.reduce((a,b)=>a+b,0)/3*100)/100;
+  return{q:`A candidate's final score is a weighted average of three components. Using the table, what is the candidate's final score?`,table:{head:['Component','Weight','Score'],rows:names.map((n,i)=>[n,w[i]+'%',s[i]])},...mc(wa,[sa,wa+2,wa-2,Math.round((s[0]+s[1])/2*100)/100]),exp:`Nhân mỗi điểm với trọng số rồi cộng lại: ${s.map((x,i)=>`${x} × ${w[i]/100}`).join(' + ')} = ${fmt(wa)}. Lấy trung bình cộng thường (${fmt(sa)}) là sai vì các phần có trọng số khác nhau.`}},
+ // [medium] Tính ngược giá trước thuế
+ ()=>{const v=pick([5,8,10,20]),pre=R(10,90)*10,inc=pre*(100+v)/100,naive=Math.round(inc*(100-v))/100;
+  return{q:`A laptop bag costs $${fmt(inc)} including ${v}% VAT. What is the price before VAT?`,...mc(pre,[naive,inc-v,Math.round(inc/(1+2*v/100)*100)/100,pre+v],x=>'$'+fmt(x)),exp:`Giá đã gồm thuế = giá gốc × ${(100+v)/100}. Giá gốc: $${fmt(inc)} ÷ ${(100+v)/100} = $${fmt(pre)}. Lỗi hay gặp là trừ ${v}% của giá đã có thuế (ra $${fmt(naive)}).`}},
+ // [medium] Quy đổi tiền tệ qua tỷ giá chéo
+ ()=>{const a=pick([1.05,1.08,1.1,1.12,1.2]),b=pick([24000,25000,26000]),E=R(2,40)*50,ans=Math.round(E*a*b),wrong=Math.round(E/a*b);
+  return{q:`Using the exchange rates in the table, how many Vietnamese dong (VND) would you receive for €${fmt(E)}?`,table:{head:['Currency pair','Rate'],rows:[['1 EUR → USD',String(a)],['1 USD → VND',fmt(b)]]},...mc(ans,[wrong,E*b,Math.round(ans*1.1),Math.round(E*a*1000)],x=>fmt(x)+' VND'),exp:`Đổi EUR sang USD: €${fmt(E)} × ${a} = $${fmt(E*a)}. Đổi sang VND: ${fmt(E*a)} × ${fmt(b)} = ${fmt(ans)} VND. Nhầm chiều tỷ giá (chia cho ${a}) sẽ ra ${fmt(wrong)} VND.`}},
+ // [medium] Tìm giá trị bị thiếu trong bảng khi biết tổng
+ ()=>{const qs=['Q1','Q2','Q3','Q4'],v=qs.map(()=>R(20,90)*10),miss=R(0,3),T=v.reduce((a,b)=>a+b,0),x=v[miss],others=v.filter((_,i)=>i!==miss),avgO=Math.round(others.reduce((a,b)=>a+b,0)/3);
+  return{q:`The table shows a branch's quarterly sales (in units). Total sales for the year were ${fmt(T)} units. How many units were sold in ${qs[miss]}?`,table:{head:['Quarter','Units sold'],rows:qs.map((q,i)=>[q,i===miss?'?':fmt(v[i])])},...mc(x,[T/4,avgO,x+20,x-20]),exp:`Tổng ba quý còn lại: ${others.join(' + ')} = ${fmt(T-x)}. ${qs[miss]}: ${fmt(T)} − ${fmt(T-x)} = ${fmt(x)}.`}},
+ // [medium] Biên lợi nhuận (profit margin) và nhầm với markup
+ ()=>{const m=pick([10,12,15,20,25,30,40]),rev=R(20,80)*100,pr=rev*m/100,cost=rev-pr,mk=Math.round(pr/cost*1000)/10;
+  return{q:`Last year a product line had revenue of $${fmt(rev)}k and total costs of $${fmt(cost)}k. What was its profit margin (profit as a percentage of revenue)?`,...mc(m,[mk,100-m,m+5,m-5],v=>fmt(v)+'%'),exp:`Lợi nhuận: ${fmt(rev)} − ${fmt(cost)} = ${fmt(pr)}k. Biên lợi nhuận = lợi nhuận ÷ doanh thu = ${fmt(pr)} ÷ ${fmt(rev)} = ${m}%. Chia cho chi phí (${mk}%) là tỷ lệ markup, không phải biên lợi nhuận.`}},
+ // [medium] Điểm hòa vốn
+ ()=>{const vc=R(5,40),mg=R(2,20),p=vc+mg,u=R(10,200)*10,F=mg*u;
+  return{q:`A company has fixed costs of $${fmt(F)}. Each unit sells for $${p} and has a variable cost of $${vc}. How many units must be sold to break even?`,...mc(u,[Math.round(F/p),Math.round(F/vc),u+mg*10,Math.round(u*1.5)],x=>fmt(x)+' units'),exp:`Mỗi sản phẩm đóng góp $${p} − $${vc} = $${mg} để bù chi phí cố định. Số sản phẩm hòa vốn: $${fmt(F)} ÷ $${mg} = ${fmt(u)}.`}},
+],
+hard:[
+ // [hard] Tăng trưởng kép nhiều năm
+ ()=>{const P=R(2,9)*1000,r=pick([5,10,15,20]),n=pick([2,3]),k=1+r/100,ans=Math.round(P*k**n),simple=Math.round(P*(1+r*n/100));
+  return{q:`An app had ${fmt(P)} active users at the start of 2024. If the number of users grows by ${r}% each year (compounded), how many users will it have after ${n} years? (Round to the nearest whole number.)`,...mc(ans,[simple,Math.round(P*k**(n-1)),Math.round(P*k**(n+1)),ans+P*r/100],x=>fmt(x)),exp:`Tăng trưởng kép: ${fmt(P)} × ${k}^${n} = ${fmt(P)} × ${Math.round(k**n*1e6)/1e6} ≈ ${fmt(ans)}. Cộng thẳng ${r}% × ${n} năm (tăng trưởng đơn) chỉ ra ${fmt(simple)}.`}},
+ // [hard] Tìm giá trị ban đầu sau hai lần thay đổi %
+ ()=>{const d=pick([10,20,25]),u=pick([10,20,25,50]),o=R(10,60)*100,X=o*(100-d)*(100+u)/10000,r2=v=>Math.round(v*100)/100,kf=(100-d)*(100+u)/10000;
+  return{q:`A department's budget was cut by ${d}% and then increased by ${u}%. The budget is now $${fmt(X)}. What was the original budget?`,...mc(o,[r2(X*(1+d/100)*(1-u/100)),r2(X/(1+(u-d)/100)),r2(X*(1+d/100)/(1+u/100)),o+100],v=>'$'+fmt(v)),exp:`Hệ số tổng: ${(100-d)/100} × ${(100+u)/100} = ${kf}. Ban đầu: $${fmt(X)} ÷ ${kf} = $${fmt(o)}. Không được đảo dấu từng % hay cộng gộp ${u}% − ${d}%.`}},
+ // [hard] Thay đổi tỷ lệ khi bổ sung thêm một nhóm
+ ()=>{const[a,b,c]=pick([[3,1,2],[3,2,4],[5,2,3],[5,3,4],[4,1,3],[2,1,3],[5,1,2],[7,3,5],[3,2,5]]),k=R(4,15),x=(c-b)*k;
+  return{q:`A firm has ${fmt((a+b)*k)} staff, and the ratio of full-time to part-time staff is ${a}:${b}. The firm hires only part-time staff until the ratio becomes ${a}:${c}. How many part-time staff are hired?`,...mc(x,[c-b,c*k,x+k,x+2*k]),exp:`Mỗi phần: ${fmt((a+b)*k)} ÷ ${a+b} = ${k}. Toàn thời gian: ${a*k}, bán thời gian: ${b*k}. Số toàn thời gian không đổi nên mỗi phần vẫn là ${k}; bán thời gian mới: ${c} × ${k} = ${c*k}. Tuyển thêm: ${c*k} − ${b*k} = ${x}.`}},
+ // [hard] Phân biệt % thay đổi với điểm phần trăm (percentage points)
+ ()=>{const r1=pick([4,5,8,10,12,15,20,25]),g=pick([10,20,25,40,50,60]),r2=Math.round(r1*(100+g))/100,pp=Math.round((r2-r1)*100)/100,wr=Math.round((r2-r1)/r2*1000)/10;
+  return{q:`A website's conversion rate rose from ${fmt(r1)}% in 2024 to ${fmt(r2)}% in 2025. By what percentage did the conversion rate increase?`,...mc(g,[pp,wr,g+10,g/2],v=>fmt(v)+'%'),exp:`Mức tăng là ${fmt(pp)} điểm phần trăm. Phần trăm thay đổi tương đối: ${fmt(pp)} ÷ ${fmt(r1)} = ${g}%. Lấy hiệu ${fmt(pp)} làm đáp án là nhầm giữa "điểm phần trăm" và "phần trăm".`}},
+ // [hard] Bảng nhiều cột: chi phí trên mỗi đơn vị, so sánh
+ ()=>{const names=['North','South','East','West'];let rows,cpu,best,ok,t=0;
+  do{rows=names.map(n=>{const u=R(4,30)*50,c=u*R(8,30)/2;return[n,u,c]});cpu=rows.map(r=>r[2]/r[1]);const mn=Math.min(...cpu);best=cpu.indexOf(mn);const lowC=rows.map(r=>r[2]).indexOf(Math.min(...rows.map(r=>r[2])));ok=cpu.filter(v=>Math.abs(v-mn)<0.25).length===1&&lowC!==best;t++}while(!ok&&t<300);
+  return{q:`The table shows delivery costs and parcels delivered by four regional depots last month. Which depot had the lowest cost per parcel?`,table:{head:['Depot','Parcels','Total cost ($)'],rows:rows.map(r=>[r[0],fmt(r[1]),fmt(r[2])])},opts:names.slice(),ans:best,exp:`Chi phí mỗi bưu kiện: ${rows.map((r,i)=>`${r[0]} $${fmt(cpu[i])}`).join(', ')}. ${names[best]} thấp nhất, dù không phải kho có tổng chi phí thấp nhất.`}},
+]};
+/* ---------- verbal: đoạn văn mới ----------
+   Cùng định dạng VERB trong index.html: {p: đoạn văn, s: [[statement, T|F|C, giải thích]]}.
+   Dùng hằng T, F, C đã khai báo sẵn (const T='True',F='False',C='Cannot say').
+   Cách ghép: VERB.easy.push(...VERB_NEW.easy); VERB.medium.push(...VERB_NEW.medium); VERB.hard.push(...VERB_NEW.hard);
+   (đặt sau khai báo VERB). */
+const VERB_NEW={
+easy:[
+ {p:`Sunfield Solar installs rooftop panels for homes and small businesses. Last year the company completed 1,800 installations, up from 1,200 the year before. Every installation comes with a ten-year warranty on the panels. Customers can pay in full or spread the cost over 36 monthly payments at no extra charge.`,
+  s:[[`Sunfield completed more installations last year than the year before.`,T,`Đoạn văn nói số lắp đặt tăng từ 1.200 lên 1.800.`],
+     [`Customers who pay monthly are charged interest.`,F,`Đoạn văn nói trả góp 36 tháng "at no extra charge", tức không mất thêm phí.`],
+     [`Most of Sunfield's customers are small businesses.`,C,`Chỉ biết khách hàng gồm hộ gia đình và doanh nghiệp nhỏ, không biết nhóm nào chiếm đa số.`],
+     [`The panel warranty lasts longer than five years.`,T,`Bảo hành tấm pin là mười năm, dài hơn năm năm.`]]},
+ {p:`The HR department has introduced a new leave request system. From 1 September, all leave requests must be submitted through the online portal at least five working days in advance. Paper forms will no longer be accepted. Requests for sick leave are exempt from the advance notice rule but must still be recorded in the portal.`,
+  s:[[`Employees can still use paper forms to request leave after 1 September.`,F,`Đoạn văn nói rõ "Paper forms will no longer be accepted".`],
+     [`Sick leave does not need to be requested five working days in advance.`,T,`Nghỉ ốm được miễn quy định báo trước.`],
+     [`Sick leave does not need to be entered in the portal.`,F,`Nghỉ ốm vẫn phải được ghi nhận trên portal ("must still be recorded").`],
+     [`Most employees prefer the new online system.`,C,`Đoạn văn không nói gì về ý kiến của nhân viên.`]]},
+ {p:`Honeybees communicate the location of food through a movement known as the waggle dance. The angle of the dance relative to the vertical shows the direction of the food in relation to the sun, and the length of the waggle phase indicates distance. Other bees in the hive follow the dancer and then fly out to find the source.`,
+  s:[[`The length of the waggle phase gives information about distance.`,T,`Đoạn văn nói độ dài pha "waggle" cho biết khoảng cách.`],
+     [`The waggle dance shows direction relative to the moon.`,F,`Hướng được thể hiện so với mặt trời, không phải mặt trăng.`],
+     [`All bee species perform the waggle dance.`,C,`Đoạn văn chỉ nói về ong mật (honeybees), không có thông tin về các loài ong khác.`]]},
+ {p:`Brightline Telecom launched a new unlimited data plan in May priced at 200,000 VND per month. Customers who sign a 12-month contract receive the first month free. The plan is available only to customers aged 18 or over. Brightline reported that 50,000 customers had joined the plan by the end of June.`,
+  s:[[`A 16-year-old can sign up for the plan.`,F,`Gói cước chỉ dành cho khách từ 18 tuổi trở lên.`],
+     [`Customers on a 12-month contract pay nothing for their first month.`,T,`Hợp đồng 12 tháng được miễn phí tháng đầu tiên.`],
+     [`The plan is cheaper than Brightline's competitors' unlimited plans.`,C,`Đoạn văn không so sánh giá với đối thủ.`],
+     [`More than 60,000 customers had joined the plan by the end of June.`,F,`Đến cuối tháng 6 có 50.000 khách, ít hơn 60.000.`]]},
+],
+medium:[
+ {p:`A logistics firm tested route-planning software in two of its six depots for three months. In those depots, fuel costs fell by 9% and late deliveries fell by a third. The other four depots, which did not use the software, saw fuel costs rise by 2% over the same period, mainly because fuel prices increased. The firm will decide whether to roll out the software after a review in January.`,
+  s:[[`The software was tested in a minority of the firm's depots.`,T,`Thử nghiệm ở 2 trên 6 kho, tức chưa đến một nửa.`],
+     [`Fuel costs fell in every one of the firm's depots during the trial.`,F,`Bốn kho không dùng phần mềm có chi phí nhiên liệu tăng 2%.`],
+     [`The firm has already decided to use the software in all depots.`,F,`Công ty mới chỉ sẽ quyết định sau đợt đánh giá vào tháng 1.`],
+     [`The trial depots made fewer total deliveries than the other depots.`,C,`Đoạn văn chỉ nói giao trễ giảm một phần ba, không cho biết tổng số chuyến giao của từng nhóm kho.`]]},
+ {p:`Microplastics are plastic particles smaller than five millimetres. Some are manufactured at that size, for example for use in cosmetics, while others form when larger plastic items break down. Researchers have found microplastics in seawater, soil and drinking water. Their long-term effects on human health are still being studied, and scientists say current evidence is not sufficient to draw firm conclusions.`,
+  s:[[`All microplastics come from larger plastic items breaking down.`,F,`Một số hạt được sản xuất sẵn ở kích thước nhỏ, ví dụ dùng trong mỹ phẩm.`],
+     [`Microplastics have been found in drinking water.`,T,`Đoạn văn liệt kê nước uống trong các nơi đã phát hiện vi nhựa.`],
+     [`Microplastics are harmful to human health.`,C,`Các nhà khoa học nói bằng chứng hiện tại chưa đủ để kết luận chắc chắn, nên không thể nói đúng hay sai.`],
+     [`A plastic particle measuring three millimetres counts as a microplastic.`,T,`Vi nhựa được định nghĩa là hạt nhỏ hơn năm milimét; ba milimét thỏa điều kiện.`]]},
+ {p:`To qualify for the company's annual innovation award, a project must have been completed within the last twelve months and must have produced measurable savings or revenue. Projects led by members of the award committee are not eligible. This year, the committee received 38 nominations and shortlisted eight of them.`,
+  s:[[`A project completed two years ago can qualify for this year's award.`,F,`Dự án phải hoàn thành trong vòng mười hai tháng gần nhất.`],
+     [`Fewer than a quarter of this year's nominations were shortlisted.`,T,`8 trên 38 là khoảng 21%, nhỏ hơn 25%.`],
+     [`A project led by a member of the award committee could win this year's award.`,F,`Đoạn văn nói dự án do thành viên hội đồng giải thưởng dẫn dắt không đủ điều kiện ("are not eligible").`],
+     [`All eight shortlisted projects produced revenue.`,C,`Điều kiện là tạo ra tiết kiệm HOẶC doanh thu; có thể một số dự án chỉ tạo ra tiết kiệm.`]]},
+ {p:`Cloud gaming services stream games from remote servers, so players do not need expensive hardware. However, they require a stable internet connection, and most providers recommend a speed of at least 15 Mbps. In a recent industry survey, 41% of gamers said they had tried cloud gaming, but only 12% said they used it regularly. The most common reason given for not using it more was input delay.`,
+  s:[[`Cloud gaming allows people to play without owning expensive hardware.`,T,`Câu đầu đoạn văn nói người chơi không cần phần cứng đắt tiền.`],
+     [`Most of the gamers surveyed used cloud gaming regularly.`,F,`Chỉ 12% dùng thường xuyên.`],
+     [`Input delay was the most frequently mentioned reason for not using cloud gaming more.`,T,`Đoạn văn nói đây là lý do phổ biến nhất.`],
+     [`Cloud gaming will become more popular than console gaming within five years.`,C,`Đoạn văn không đưa ra dự báo nào về tương lai.`]]},
+],
+hard:[
+ {p:`Some economists argue that a four-day working week raises productivity because rested employees work more efficiently. Critics respond that the trials most often cited involved office-based firms that volunteered to take part, which may already have been well suited to the change. A national trial now under way includes manufacturing and healthcare employers, sectors where output depends more directly on hours worked. Its results are expected next year.`,
+  s:[[`The trials most often cited involved firms that chose to participate.`,T,`Phía phản biện nói các thử nghiệm hay được trích dẫn gồm các công ty tình nguyện tham gia.`],
+     [`The national trial includes only office-based firms.`,F,`Thử nghiệm quốc gia có cả doanh nghiệp sản xuất và y tế.`],
+     [`The national trial will show that a four-day week reduces output in healthcare.`,C,`Kết quả chưa có (dự kiến năm sau), nên không thể biết.`],
+     [`Critics claim that a four-day week always lowers productivity.`,F,`Phía phản biện chỉ nghi ngờ tính đại diện của mẫu thử, không khẳng định năng suất luôn giảm.`]]},
+ {p:`Under the supplier policy, any contract worth more than 500 million VND requires three competing quotes, unless the supplier is the only one able to provide the service. Contracts renewed with an existing supplier on unchanged terms are exempt from this requirement. In March, the procurement team renewed a 700-million-VND cleaning contract with its current supplier but increased the scope to cover a new building.`,
+  s:[[`A 600-million-VND contract with a new supplier needs three competing quotes, unless that supplier is the only one able to provide the service.`,T,`Hợp đồng trên 500 triệu VND phải có ba báo giá, ngoại lệ duy nhất cho hợp đồng mới là nhà cung cấp độc quyền; miễn trừ gia hạn không áp dụng cho nhà cung cấp mới.`],
+     [`The March cleaning contract was exempt from the three-quote requirement because it was a renewal.`,F,`Miễn trừ chỉ áp dụng khi gia hạn với điều khoản không đổi; hợp đồng này đã mở rộng phạm vi nên không được miễn vì lý do gia hạn.`],
+     [`The procurement team obtained three quotes for the March cleaning contract.`,C,`Đoạn văn không nói nhóm mua hàng có lấy ba báo giá hay không.`],
+     [`The current cleaning supplier is the only company able to clean the new building.`,C,`Không có thông tin cho biết nhà cung cấp này có phải đơn vị duy nhất hay không.`]]},
+ {p:`In 2015, a coastal city built a sea wall to protect its harbour district from storm surges. Since then, the district has not flooded, although two major storms have hit the coast. Property values in the district have risen by 60%, compared with 35% across the city as a whole. A council report credits the wall for the difference, but the same period also saw a new metro line open in the district.`,
+  s:[[`The harbour district has flooded since the sea wall was built.`,F,`Đoạn văn nói từ khi xây tường chắn, khu này chưa bị ngập.`],
+     [`Property values rose faster in the harbour district than in the city overall.`,T,`60% so với 35% của toàn thành phố.`],
+     [`The sea wall was the main cause of the rise in property values.`,C,`Báo cáo hội đồng cho là do tường chắn, nhưng tuyến metro mới cũng mở cùng thời gian; đoạn văn không đủ để xác định nguyên nhân chính.`],
+     [`At least two major storms have hit the coast since the sea wall was built.`,T,`Đoạn văn nói "although two major storms have hit the coast" trong giai đoạn kể từ khi xây tường chắn.`]]},
+ {p:`A retailer's loyalty programme gives members one point for every 10,000 VND spent. Points expire 18 months after they are earned. Members who earn more than 2,000 points in a calendar year are upgraded to Gold status for the following year, which doubles the rate at which they earn points. Points cannot be transferred between members.`,
+  s:[[`A Gold member earns two points for every 10,000 VND spent.`,T,`Hạng Gold nhân đôi tốc độ tích điểm, từ một lên hai điểm cho mỗi 10.000 VND.`],
+     [`A member can give unused points to a family member.`,F,`Điểm không được chuyển giữa các thành viên.`],
+     [`A member who spent 25 million VND during 2025 at the standard rate is upgraded to Gold status for 2026.`,T,`25.000.000 ÷ 10.000 = 2.500 điểm trong một năm dương lịch, vượt ngưỡng 2.000 điểm nên được lên hạng Gold cho năm sau.`],
+     [`Most members reach Gold status.`,C,`Đoạn văn không cho biết tỷ lệ thành viên đạt hạng Gold.`]]},
+]};
+/* ---------- critical thinking: câu mới ----------
+   Cùng định dạng CRIT trong index.html: {q, o: 4 phương án, a: index đáp án, e: giải thích}.
+   Giao diện chỉ hiển thị tối đa 4 phương án (nhãn 'ABCD') và critItems() sẽ trộn thứ tự,
+   nên không dùng phương án kiểu "All of the above" hay thang 5 mức.
+   Dạng Watson-Glaser ghi ở đầu q: [Inference], [Recognition of assumptions], [Deduction], [Interpretation], [Evaluation of arguments].
+   Cách ghép: CRIT.easy.push(...CRIT_NEW.easy); CRIT.medium.push(...CRIT_NEW.medium); CRIT.hard.push(...CRIT_NEW.hard); */
+const CRIT_NEW={
+easy:[
+ {q:`[Deduction] All laptops issued by the IT department are encrypted. Some devices in the meeting room are laptops issued by the IT department. Which conclusion follows?`,o:[`Some devices in the meeting room are encrypted.`,`All devices in the meeting room are encrypted.`,`All encrypted devices were issued by the IT department.`,`There are no unencrypted devices in the meeting room.`],a:0,e:`Những thiết bị trong phòng họp là laptop của IT thì chắc chắn được mã hóa, nên ít nhất một số thiết bị trong phòng được mã hóa. Không biết gì về các thiết bị còn lại, và không suy ngược được "mọi thiết bị mã hóa đều của IT".`},
+ {q:`[Recognition of assumptions] "We should move the team training online so that more staff in our regional offices can attend." Which assumption does this statement make?`,o:[`Staff in the regional offices are able to access online training.`,`Online training is cheaper than classroom training.`,`Classroom training is ineffective.`,`Staff at head office dislike training.`],a:0,e:`Đề xuất chỉ đạt mục tiêu "nhiều nhân viên vùng tham dự hơn" nếu họ thực sự truy cập được khóa học trực tuyến. Chi phí hay hiệu quả của lớp trực tiếp không được lập luận nhắc tới và không cần thiết cho nó.`},
+ {q:`[Inference] A café near a university makes the same number of sandwiches every day. During exam week, the sandwiches sold out by 11 a.m. every weekday; in normal weeks they usually last until early afternoon. Which inference is most strongly supported?`,o:[`Demand for the café's sandwiches was higher during exam week than in a normal week.`,`Students eat more when they are stressed.`,`The café made fewer sandwiches during exam week.`,`The café will make more sandwiches next exam week.`],a:0,e:`Số bánh làm ra mỗi ngày không đổi mà bán hết sớm hơn, nên nhu cầu tuần thi cao hơn. Phương án 3 mâu thuẫn với dữ kiện; lý do tâm lý và kế hoạch tương lai thì đoạn văn không đủ thông tin.`},
+ {q:`[Interpretation] In a staff survey, 80 of the 100 respondents rated the new office layout as "good" or "excellent". Which conclusion follows beyond reasonable doubt?`,o:[`Most of the survey respondents rated the new layout positively.`,`80% of all staff like the new layout.`,`The old layout received lower ratings.`,`20 respondents rated the new layout as "poor".`],a:0,e:`80/100 người trả lời chọn "good" hoặc "excellent", tức đa số đánh giá tích cực. Không biết toàn bộ nhân viên có tham gia khảo sát không, không có số liệu về bố cục cũ, và 20 người còn lại có thể chọn "fair" chứ chưa chắc là "poor".`},
+ {q:`[Evaluation of arguments] Should the company provide free parking for employees? Which argument is the strongest?`,o:[`Yes; many employees arrive late because they spend about 20 minutes looking for paid parking.`,`Yes; parking is free at some shopping malls.`,`No; some employees cycle to work.`,`No; employees' cars come in many different colours.`],a:0,e:`Lập luận mạnh phải vừa quan trọng vừa liên quan trực tiếp. Việc nhân viên đi muộn vì tìm chỗ đỗ là tác động thực tế tới công việc. Trung tâm thương mại và màu xe không liên quan; việc một số người đi xe đạp có liên quan nhưng không đủ quan trọng để bác bỏ đề xuất.`},
+ {q:`[Deduction] Any invoice above $5,000 must be signed by the finance director. Invoice #218 is for $7,200. Which conclusion follows?`,o:[`Invoice #218 must be signed by the finance director.`,`Invoice #218 has already been signed.`,`Invoices below $5,000 do not need any signature.`,`The finance director will reject invoice #218.`],a:0,e:`Hóa đơn 7.200 USD vượt ngưỡng 5.000 USD nên bắt buộc phải có chữ ký giám đốc tài chính. Quy định không cho biết hóa đơn đã được ký chưa, và không nói gì về hóa đơn dưới 5.000 USD (suy ra như vậy là lỗi phủ định tiền đề).`},
+ {q:`[Recognition of assumptions] "Let's send the contract by courier instead of by post, so that it arrives before Friday's deadline." Which assumption does this statement make?`,o:[`The courier can deliver the contract before Friday.`,`The contract is confidential.`,`Post is cheaper than a courier.`,`The deadline cannot be extended.`],a:0,e:`Lựa chọn courier chỉ hợp lý nếu courier giao kịp trước thứ Sáu. Tính bảo mật, giá cước hay khả năng gia hạn không phải điều kiện để lập luận đứng vững.`},
+ {q:`[Evaluation of arguments] Should the city plant more trees along its main roads? Which argument is the strongest?`,o:[`Yes; measurements in the city show that tree-lined streets are about 2°C cooler in summer, which reduces heat-related illness.`,`Yes; trees look nice in photographs.`,`No; leaves fall from trees in autumn.`,`No; some other cities have not planted trees along their roads.`],a:0,e:`Phương án đầu dựa trên số liệu đo tại chính thành phố và nêu lợi ích quan trọng về sức khỏe. Các phương án còn lại hoặc chỉ là cảm tính, hoặc là chi tiết nhỏ, hoặc dựa vào việc nơi khác làm gì.`},
+],
+medium:[
+ {q:`[Inference] Over five years, Company Z's annual staff turnover fell from 25% to 12%. During this period it introduced flexible hours, raised salaries twice and opened an on-site gym. Before these changes, exit interviews showed that pay was the most common reason for leaving. Which inference is most strongly supported?`,o:[`The salary increases probably contributed to the fall in turnover.`,`The gym was the main reason turnover fell.`,`Turnover will continue to fall over the next five years.`,`Flexible hours had no effect on turnover.`],a:0,e:`Lương là lý do nghỉ việc phổ biến nhất và công ty đã tăng lương hai lần, nên "có lẽ đúng" rằng tăng lương góp phần làm giảm tỷ lệ nghỉ việc. Không có dữ kiện cho thấy phòng gym là nguyên nhân chính, cũng không thể khẳng định giờ linh hoạt không có tác dụng hay dự báo tương lai.`},
+ {q:`[Recognition of assumptions] "Almost all the reviews on our website give our product five stars, so our customers must be satisfied with it." Which assumption is this argument most dependent on?`,o:[`The reviews on the website are representative of customers in general.`,`Five-star reviews on the website were written by paid reviewers.`,`The product is cheaper than its competitors.`,`Unhappy customers write longer reviews than happy ones.`],a:0,e:`Từ đánh giá trên website suy ra cho toàn bộ khách hàng thì phải giả định nhóm viết đánh giá đại diện cho khách hàng nói chung. Phương án 2 còn làm yếu lập luận; giá và độ dài đánh giá không liên quan.`},
+ {q:`[Deduction] All members of the audit team have an accounting qualification. No interns have an accounting qualification. Which conclusion follows?`,o:[`No interns are members of the audit team.`,`Some interns are members of the audit team.`,`Everyone with an accounting qualification is on the audit team.`,`Some members of the audit team are interns.`],a:0,e:`Nếu một thực tập sinh ở trong nhóm kiểm toán thì người đó phải có chứng chỉ kế toán, mâu thuẫn với "không thực tập sinh nào có chứng chỉ". Vậy không thực tập sinh nào thuộc nhóm kiểm toán. Phương án 3 là đảo ngược mệnh đề, không được đảm bảo.`},
+ {q:`[Deduction] If the client signs by Monday, the project will start on 1 June. If the project starts on 1 June, the team will hire two contractors. The team did not hire any contractors. Which conclusion follows?`,o:[`The client did not sign by Monday.`,`The client signed by Monday.`,`The project started on 1 June.`,`The team hired only one contractor.`],a:0,e:`Chuỗi điều kiện: ký trước thứ Hai → bắt đầu 1/6 → thuê hai nhà thầu. Không thuê nhà thầu nào nên dự án không bắt đầu 1/6, và vì vậy khách hàng không ký trước thứ Hai (phủ định hệ quả hai lần).`},
+ {q:`[Interpretation] Between 2020 and 2025, the share of a company's revenue that came from online sales rose from 30% to 55%. The company's total revenue stayed roughly the same over the period. Which conclusion follows beyond reasonable doubt?`,o:[`Revenue from sales other than online sales fell between 2020 and 2025.`,`The number of online customers nearly doubled.`,`Online sales are more profitable than other sales.`,`The company closed some of its physical stores.`],a:0,e:`Tổng doanh thu gần như không đổi, phần không phải trực tuyến giảm từ 70% xuống 45% tổng, nên doanh thu ngoài kênh trực tuyến chắc chắn giảm. Số khách, lợi nhuận và việc đóng cửa hàng không suy ra được từ tỷ trọng doanh thu.`},
+ {q:`[Evaluation of arguments] Should companies require all staff to complete annual cybersecurity training? Which argument is the strongest?`,o:[`Yes; most data breaches at similar companies began with staff clicking on phishing emails, and training has been shown to reduce such clicks.`,`Yes; cybersecurity is frequently in the news.`,`No; some staff already know a lot about computers.`,`No; the training would be delivered online.`],a:0,e:`Phương án đầu chỉ ra nguyên nhân chính của sự cố và bằng chứng rằng đào tạo xử lý được nó, vừa liên quan vừa quan trọng. Tin tức là lý do hời hợt; việc "một số" người đã giỏi không phải lý do để bỏ đào tạo cho tất cả; hình thức trực tuyến không liên quan.`},
+ {q:`[Recognition of assumptions] "Our sales in the northern region fell after a competitor opened a store there, so we should cut our prices in the north to win back customers." Which assumption does this argument make?`,o:[`Price was at least part of the reason customers switched to the competitor.`,`The competitor will soon close its northern store.`,`Our northern store has a better location than the competitor's.`,`Our sales in the southern region rose last year.`],a:0,e:`Giảm giá chỉ giành lại khách nếu giá là (ít nhất một phần) lý do họ chuyển sang đối thủ. Nếu khách chuyển vì chất lượng hoặc vị trí, giảm giá có thể không hiệu quả. Các phương án khác không cần thiết cho lập luận.`},
+ {q:`[Inference] A hospital found that patients discharged on Fridays were readmitted within 30 days more often than patients discharged on other weekdays. Follow-up appointments are usually arranged within two days of discharge, and the hospital has far fewer administrative staff at weekends. Which inference is most strongly supported?`,o:[`Reduced weekend staffing may make follow-up care harder to arrange for patients discharged on Fridays.`,`Patients discharged on Fridays are generally more seriously ill.`,`Readmission rates are the same whatever day patients are discharged.`,`The hospital will stop discharging patients on Fridays.`],a:0,e:`Hai ngày sau khi xuất viện thứ Sáu rơi vào cuối tuần, lúc ít nhân viên hành chính, nên "có lẽ đúng" rằng việc sắp xếp tái khám khó hơn. Mức độ bệnh không được nhắc đến; phương án 3 mâu thuẫn với dữ kiện; kế hoạch tương lai không có thông tin.`},
+],
+hard:[
+ {q:`[Deduction] Every project that passes the security review is deployed on a Thursday. Some projects deployed on a Thursday are rolled back within a week. Project K passed the security review. Which conclusion must be true?`,o:[`Project K is deployed on a Thursday.`,`Project K is rolled back within a week.`,`Some projects that pass the security review are rolled back within a week.`,`Every project deployed on a Thursday has passed the security review.`],a:0,e:`K qua đánh giá bảo mật nên chắc chắn được triển khai vào thứ Năm. Các dự án bị rollback có thể là những dự án thứ Năm KHÔNG qua đánh giá bảo mật, nên phương án 2 và 3 không chắc chắn. Phương án 4 là đảo ngược mệnh đề.`},
+ {q:`[Deduction] No one who works night shifts is eligible for the morning bonus. Everyone who is eligible for the morning bonus has worked at least one weekend this month. Hùng has worked a weekend this month. Which conclusion follows?`,o:[`It cannot be determined whether Hùng is eligible for the morning bonus.`,`Hùng is eligible for the morning bonus.`,`Hùng does not work night shifts.`,`Hùng works night shifts.`],a:0,e:`"Đủ điều kiện → đã làm cuối tuần" không cho phép suy ngược "đã làm cuối tuần → đủ điều kiện" (lỗi khẳng định hệ quả). Vì không biết Hùng có đủ điều kiện không, cũng không suy ra được Hùng có làm ca đêm hay không.`},
+ {q:`[Recognition of assumptions] "Our new hiring test predicts job performance well: the employees who scored highest on it last year received the best performance ratings this year." Which assumption is this argument most dependent on?`,o:[`The performance ratings were not influenced by managers knowing the employees' test scores.`,`The new test is shorter than the old one.`,`The new test cost more than the previous one.`,`Competitors use a similar hiring test.`],a:0,e:`Nếu quản lý biết điểm test và vô tình chấm hiệu suất theo đó, mối tương quan không chứng minh bài test dự báo tốt. Lập luận ngầm giả định điểm đánh giá hiệu suất độc lập với điểm test. Độ dài, chi phí hay việc đối thủ dùng test không liên quan.`},
+ {q:`[Inference] A retailer's winter jacket sales in the southern region were higher in December 2025 than in any December in the previous ten years. December 2025 was also the coldest December on record in the south. The retailer did not change its prices or advertising during 2025. Which inference is most strongly supported?`,o:[`The unusually cold weather probably contributed to the higher jacket sales.`,`Jacket sales in the south will be just as high next December.`,`The retailer's jacket sales in the northern region also reached a record.`,`The retailer cut its jacket prices in December 2025.`],a:0,e:`Giá và quảng cáo không đổi, tháng 12 lạnh kỷ lục trùng với doanh số kỷ lục, nên thời tiết "có lẽ" là một nguyên nhân. Dự báo năm sau và doanh số miền Bắc không có thông tin; phương án 4 mâu thuẫn với dữ kiện giá không đổi.`},
+ {q:`[Interpretation] Of 400 applicants for a graduate scheme, 120 had a master's degree. 60 applicants were hired, and 30 of those hired had a master's degree. Which conclusion follows beyond reasonable doubt?`,o:[`Applicants with a master's degree were hired at a higher rate than applicants without one.`,`Having a master's degree caused applicants to be hired.`,`Half of the applicants with a master's degree were hired.`,`Most of the people hired had a master's degree.`],a:0,e:`Tỷ lệ trúng tuyển: có thạc sĩ 30/120 = 25%; không có 30/280 ≈ 10,7%. Phương án 3 sai (25%, không phải 50%); phương án 4 sai (30/60 là đúng một nửa, không phải đa số); số liệu tương quan không chứng minh nhân quả.`},
+ {q:`[Interpretation] Last year, the average (mean) household income in a town rose by 10%, while the median household income stayed exactly the same. Which conclusion follows beyond reasonable doubt?`,o:[`Not every household's income rose by 10%.`,`The richest household in the town earned more than the year before.`,`Most households' incomes did not change.`,`The number of households in the town fell.`],a:0,e:`Nếu mọi hộ đều tăng 10% thì trung vị cũng phải tăng 10%; trung vị đứng yên nên chắc chắn có hộ không tăng đủ 10%. Mức tăng của trung bình có thể đến từ nhiều nhóm hộ khác nhau, nên không khẳng định được về hộ giàu nhất hay về "đa số hộ".`},
+ {q:`[Evaluation of arguments] Should the company replace its annual performance reviews with quarterly check-ins? Which argument is the strongest?`,o:[`Yes; in a pilot in two departments, quarterly check-ins helped managers spot performance problems earlier, and staff turnover fell compared with the rest of the company.`,`Yes; quarterly check-ins are fashionable among technology companies.`,`No; any change to a process causes some confusion at first.`,`No; the company has used annual reviews for twenty years.`],a:0,e:`Phương án đầu dựa trên bằng chứng thử nghiệm ngay trong công ty, có nhóm so sánh, và nói về kết quả quan trọng. "Đang thịnh hành", "mọi thay đổi đều gây xáo trộn ban đầu" và "đã dùng lâu năm" đều là lý do yếu, không đánh giá được hiệu quả thực tế.`},
+ {q:`[Evaluation of arguments] A city claims that its new cycle lanes reduced traffic accidents, because accidents fell by 15% in the year after the lanes opened. Which statement, if true, most weakens this claim?`,o:[`Accidents fell by a similar amount that year in neighbouring cities that built no new cycle lanes.`,`The cycle lanes were expensive to build.`,`Some drivers complained about the cycle lanes.`,`Accidents in the city had been rising each year before the lanes opened.`],a:0,e:`Nếu các thành phố không có làn xe đạp cũng giảm tương tự, mức giảm nhiều khả năng do yếu tố chung chứ không phải làn xe đạp. Chi phí và phàn nàn không liên quan đến quan hệ nhân quả; phương án cuối thực ra làm mạnh thêm lập luận.`},
+]};
+for(const lv of ['easy','medium','hard']){NUM[lv].push(...NUM_NEW[lv]);VERB[lv].push(...VERB_NEW[lv]);CRIT[lv].push(...CRIT_NEW[lv])}
+
 /* ---------- storage ---------- */
 const AKEY='cogmock.attempts',HMAX=500;
 /* Chi tiết từng bài (đề, đáp án, thời gian) nằm trong IndexedDB vì localStorage chỉ chứa được vài bài.
@@ -643,7 +825,7 @@ function home(){
     <table class="structure">
       ${SECTIONS.map((d,i)=>`<tr><td class="n">${i+1}</td><td class="name">${d.name}<span class="vi">${d.vi}</span></td><td class="meta">${d.count} câu<br>${d.minutes} phút</td><td class="act"><button class="btn ghost small" data-practice="${d.key}">Luyện riêng</button></td></tr>`).join('')}
     </table>
-    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button>${wrong.length?`<button class="btn ghost" id="reviewBtn">Ôn câu sai (${wrong.length})</button>`:''}<button class="btn ghost" id="histBtn">Lịch sử luyện tập${hist.length?` (${hist.length})`:''}</button></div>
+    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button><button class="btn ghost" id="guideBtn">Mẹo làm bài</button>${wrong.length?`<button class="btn ghost" id="reviewBtn">Ôn câu sai (${wrong.length})</button>`:''}<button class="btn ghost" id="histBtn">Lịch sử luyện tập${hist.length?` (${hist.length})`:''}</button></div>
   </section>
   <section class="section-gap">
     <h3 style="margin-bottom:8px">Quy định giống đề thật</h3>
@@ -662,6 +844,7 @@ function home(){
   app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
   const ar=document.getElementById('allRes');if(ar)ar.onclick=historyView;
   document.getElementById('histBtn').onclick=historyView;
+  document.getElementById('guideBtn').onclick=()=>guideView();
   const rv=document.getElementById('reviewBtn');if(rv)rv.onclick=()=>startReview(wrong);
   if(saved){document.getElementById('resumeBtn').onclick=()=>resumeRun(saved);
     document.getElementById('dropBtn').onclick=()=>{if(confirm('Bỏ bài đang làm dở? Kết quả bài này sẽ không được lưu.')){clearRun();home()}}}
@@ -959,6 +1142,225 @@ function showAttempt(att){
   document.getElementById('homeBtn').onclick=home;
   document.getElementById('listBtn').onclick=historyView;
   window.scrollTo(0,0);
+}
+/* ---------- trang mẹo làm bài ---------- */
+// Nội dung tĩnh do mình viết, chứa HTML tin cậy. Ví dụ abstract dùng chung panelSVG với đề thi.
+const ab=(shape,o={})=>({shape,sides:4,rot:0,fill:false,dots:0,corner:-1,...o});
+const GUIDE=[
+{key:'all',name:'Mẹo chung',vi:'Áp dụng cho cả 4 phần',
+ intro:`Đề cognitive không cần kiến thức chuyên môn. Thứ được đo là <b>tốc độ</b> và <b>độ chính xác</b> khi xử lý thông tin dưới áp lực thời gian. Phần lớn điểm bị mất không phải vì câu khó, mà vì đọc vội, kẹt quá lâu ở một câu, hoặc rơi vào bẫy quen thuộc.`,
+ steps:[`<b>Biết trước nhịp làm bài.</b> Numerical khoảng 50 giây/câu, Verbal 40 giây/câu, Abstract 12 giây/câu, Critical Thinking 45 giây/câu.`,
+  `<b>Đừng kẹt.</b> Quá gấp đôi thời gian gợi ý mà chưa ra thì chọn phương án hợp lý nhất rồi đi tiếp. Một câu khó và một câu dễ đều chỉ được 1 điểm.`,
+  `<b>Không bỏ trống.</b> Ở trang này (và đa số đề thật) bỏ qua là tính sai, đoán thì còn cơ hội đúng 25–33%.`,
+  `<b>Chuẩn bị sẵn giấy, bút, máy tính cầm tay</b> trước khi bấm bắt đầu.`,
+  `<b>Luyện theo dạng, không luyện theo câu.</b> Đề thật chỉ xoay quanh vài chục dạng cố định. Nhận ra dạng nhanh thì làm nhanh.`],
+ types:[]},
+{key:'num',name:'Numerical Reasoning',vi:'Suy luận số học',
+ intro:`Bạn nhận một bảng hoặc biểu đồ và một câu hỏi tính toán. Phép tính thường chỉ là cộng, trừ, nhân, chia và phần trăm. Cái khó là <b>chọn đúng số liệu</b> và <b>không sai đơn vị</b>.`,
+ steps:[`<b>Đọc câu hỏi trước</b>, rồi mới nhìn bảng. Bạn sẽ biết cần tìm hàng nào, cột nào thay vì đọc hết.`,
+  `<b>Gạch chân đơn vị</b>: nghìn, triệu, %, theo năm hay theo quý.`,
+  `<b>Ước lượng trước khi bấm máy.</b> Nếu các phương án cách xa nhau, làm tròn là đủ để chọn.`,
+  `<b>Kiểm tra lại câu hỏi</b> trước khi chọn: hỏi số tiền hay phần trăm, tăng hay giảm, năm nào.`],
+ types:[
+  {t:'Phần trăm thay đổi',
+   how:`Công thức: <b>(mới − cũ) ÷ cũ × 100</b>. Luôn chia cho giá trị <b>ban đầu</b>.`,
+   ex:`<p><b>Revenue was $480k in 2023 and $552k in 2024. What was the percentage increase?</b></p><p class="muted">A. 13% · B. 15% · C. 72% · D. 87%</p>`,
+   sol:[`Chênh lệch: 552 − 480 = 72.`,`Chia cho giá trị cũ: 72 ÷ 480 = 0,15.`,`Đáp án <b>B. 15%</b>.`],
+   trap:`Chia cho giá trị mới (72 ÷ 552 ≈ 13%) là lỗi phổ biến nhất. Phương án A được đặt ra để bẫy đúng lỗi này.`},
+  {t:'Điểm phần trăm và phần trăm',
+   how:`Khi một tỷ lệ % thay đổi, "tăng bao nhiêu điểm %" là phép trừ, còn "tăng bao nhiêu %" là phép chia.`,
+   ex:`<p><b>A company's market share rose from 12% to 15%. By what percentage did its market share increase?</b></p><p class="muted">A. 3% · B. 15% · C. 20% · D. 25%</p>`,
+   sol:[`Tăng 15 − 12 = 3 <b>điểm phần trăm</b>.`,`Nhưng tính theo phần trăm: 3 ÷ 12 = 0,25.`,`Đáp án <b>D. 25%</b>.`],
+   trap:`Chọn A (3%) là nhầm điểm phần trăm với phần trăm.`},
+  {t:'Tăng rồi giảm liên tiếp',
+   how:`Đổi mỗi lần thay đổi thành <b>hệ số nhân</b>: tăng 20% là ×1,2, giảm 20% là ×0,8, rồi nhân các hệ số với nhau. Không cộng trừ phần trăm.`,
+   ex:`<p><b>A product's price rose by 20% in January and then fell by 20% in February. Compared with the original price, the February price is:</b></p><p class="muted">A. the same · B. 4% lower · C. 4% higher · D. 2% lower</p>`,
+   sol:[`1,2 × 0,8 = 0,96.`,`Giá cuối bằng 96% giá gốc, tức thấp hơn 4%.`,`Đáp án <b>B</b>.`],
+   trap:`"+20% rồi −20% thì về như cũ" là sai, vì lần giảm tính trên giá đã tăng.`},
+  {t:'Chia theo tỷ lệ',
+   how:`Cộng các phần của tỷ lệ, chia tổng cho số phần để ra <b>giá trị 1 phần</b>, rồi nhân lên.`,
+   ex:`<p><b>A profit of 360 million VND is shared between partners A and B in the ratio 5 : 4. How much does A receive?</b></p><p class="muted">A. 160m · B. 180m · C. 200m · D. 225m</p>`,
+   sol:[`Tổng số phần: 5 + 4 = 9.`,`1 phần = 360 ÷ 9 = 40 triệu.`,`A nhận 5 × 40 = <b>200 triệu</b>, đáp án C.`],
+   trap:`Lấy 360 ÷ 2 = 180 (chia đều) hoặc 360 × 5/8 = 225 (cộng sai tổng số phần).`},
+  {t:'Đọc bảng và so sánh tăng trưởng',
+   how:`Chỉ lấy đúng hàng và cột câu hỏi cần. So sánh tăng trưởng thì tính <b>tỷ lệ</b>, đừng so mức tăng tuyệt đối.`,
+   ex:`<p><b>Which product had the highest percentage growth in sales from Q1 to Q2?</b></p>
+     <div class="tablewrap"><table class="data"><thead><tr><th>Product</th><th>Q1 (units)</th><th>Q2 (units)</th></tr></thead><tbody><tr><td>Alpha</td><td>800</td><td>920</td></tr><tr><td>Beta</td><td>200</td><td>260</td></tr><tr><td>Gamma</td><td>1,500</td><td>1,650</td></tr></tbody></table></div>`,
+   sol:[`Alpha: +120 ÷ 800 = 15%.`,`Beta: +60 ÷ 200 = 30%.`,`Gamma: +150 ÷ 1.500 = 10%.`,`Đáp án <b>Beta</b>.`],
+   trap:`Gamma tăng nhiều đơn vị nhất (+150) nhưng tăng chậm nhất tính theo %. Câu hỏi hỏi "percentage growth".`},
+  {t:'Quy đổi tiền tệ',
+   how:`Viết chuỗi quy đổi như phép nhân phân số để đơn vị tự triệt tiêu: EUR → USD → VND.`,
+   ex:`<p><b>1 EUR = 1.08 USD and 1 USD = 25,000 VND. How much is 540 EUR in VND?</b></p><p class="muted">A. 12.5m · B. 13.5m · C. 14.58m · D. 16.2m</p>`,
+   sol:[`540 × 1,08 = 583,2 USD.`,`583,2 × 25.000 = 14.580.000 VND.`,`Đáp án <b>C</b>.`],
+   trap:`Chia thay vì nhân ở một bước. Mẹo kiểm tra: 1 EUR đắt hơn 1 USD, nên số VND phải lớn hơn 540 × 25.000 = 13,5 triệu.`},
+  {t:'Trung bình có trọng số',
+   how:`Không lấy trung bình của các trung bình. Tính <b>tổng</b> rồi chia cho <b>tổng số lượng</b>.`,
+   ex:`<p><b>Team A (10 people) has an average score of 8. Team B (30 people) has an average score of 6. What is the average score of all 40 people?</b></p><p class="muted">A. 6.5 · B. 7 · C. 7.5 · D. 6</p>`,
+   sol:[`Tổng điểm: 10 × 8 + 30 × 6 = 80 + 180 = 260.`,`260 ÷ 40 = 6,5.`,`Đáp án <b>A</b>.`],
+   trap:`(8 + 6) ÷ 2 = 7 bỏ qua việc nhóm B đông gấp 3 lần nhóm A.`},
+  {t:'Ước lượng nhanh',
+   how:`Lấy <b>10% làm mốc</b>: 10% của 8.400 là 840, suy ra 5% là 420, 20% là 1.680. Nhớ sẵn ¼ = 25%, ⅓ ≈ 33%, ⅛ = 12,5%.`,
+   ex:`<p><b>What is 48% of 612?</b></p><p class="muted">A. 245 · B. 294 · C. 312 · D. 378</p>`,
+   sol:[`Làm tròn: 50% của 600 = 300.`,`48% hơi nhỏ hơn 50%, nên đáp án hơi nhỏ hơn 300.`,`Chỉ B (294) phù hợp, không cần bấm máy.`],
+   trap:`Bấm máy cho mọi câu làm mất nhiều thời gian. Hãy nhìn khoảng cách giữa các phương án trước.`},
+ ]},
+{key:'verb',name:'Verbal Reasoning',vi:'Suy luận ngôn ngữ',
+ intro:`Bạn đọc một đoạn văn ngắn rồi đánh giá một câu là <b>True</b>, <b>False</b> hay <b>Cannot say</b>. Bài này không kiểm tra bạn hiểu biết bao nhiêu, mà kiểm tra bạn có <b>chỉ dựa vào đoạn văn</b> hay không.`,
+ steps:[`Đọc câu cần đánh giá trước, rồi tìm câu tương ứng trong đoạn văn.`,
+  `Hỏi: đoạn văn có <b>nói thẳng hoặc chắc chắn suy ra</b> điều này không? Có thì chọn <b>True</b>.`,
+  `Nếu không: đoạn văn có <b>nói điều ngược lại</b> không? Có thì chọn <b>False</b>.`,
+  `Cả hai đều không thì chọn <b>Cannot say</b>. Không có thông tin không có nghĩa là False.`,
+  `Quên hết kiến thức bên ngoài, kể cả những điều bạn biết chắc là đúng ngoài đời.`],
+ types:[
+  {t:'Nói thẳng hoặc diễn đạt lại → True',
+   how:`Câu dùng từ khác nhưng cùng nghĩa với một câu trong đoạn văn.`,
+   ex:`<div class="passage">The branch is open six days a week and is closed on Mondays.</div><p><b>Statement:</b> The branch does not open on Mondays.</p>`,
+   sol:[`"closed on Mondays" và "does not open on Mondays" cùng nghĩa.`,`Đáp án <b>True</b>.`]},
+  {t:'Suy ra chắc chắn bằng phép tính → True',
+   how:`Một phép tính đơn giản từ số liệu trong đoạn văn vẫn tính là True.`,
+   ex:`<div class="passage">Mobile banking users grew from 8 million to 12 million between 2023 and 2025.</div><p><b>Statement:</b> Mobile banking users increased by 50%.</p>`,
+   sol:[`Tăng 4 triệu trên mức ban đầu 8 triệu = 50%.`,`Đáp án <b>True</b>.`]},
+  {t:'Mâu thuẫn trực tiếp → False',
+   how:`Đoạn văn nói điều ngược lại, hoặc đưa con số, thời gian, tên khác với câu cần đánh giá.`,
+   ex:`<div class="passage">FreshCart's average delivery time increased from 45 to 55 minutes.</div><p><b>Statement:</b> FreshCart deliveries became faster.</p>`,
+   sol:[`Thời gian giao tăng tức là chậm hơn, ngược với "faster".`,`Đáp án <b>False</b>.`]},
+  {t:'Từ tuyệt đối: all, always, only, never',
+   how:`Khi câu dùng từ tuyệt đối mà đoạn văn chỉ nói chừng mực (some, often, occasionally, may), câu đó thường là <b>False</b> nếu đoạn văn có ngoại lệ, hoặc <b>Cannot say</b> nếu đoạn văn không nói gì thêm.`,
+   ex:`<div class="passage">Some large structures, such as highways, can occasionally be seen from orbit.</div><p><b>Statement:</b> Highways are always visible from orbit.</p>`,
+   sol:[`"occasionally" (thỉnh thoảng) mâu thuẫn với "always" (luôn luôn).`,`Đáp án <b>False</b>.`]},
+  {t:'Kiến thức bên ngoài → Cannot say',
+   how:`Dù bạn biết điều đó đúng ngoài đời, đoạn văn không nói thì vẫn là Cannot say.`,
+   ex:`<div class="passage">Vietnam is one of the world's largest coffee exporters.</div><p><b>Statement:</b> Vietnam exports more coffee than Brazil.</p>`,
+   sol:[`Đoạn văn chỉ nói "một trong những nước lớn nhất", không so sánh với Brazil.`,`Đáp án <b>Cannot say</b>.`],
+   trap:`Chọn True hoặc False dựa vào hiểu biết của bản thân.`},
+  {t:'Tương quan không phải nhân quả → Cannot say',
+   how:`Hai thứ đi cùng nhau không chứng minh cái này gây ra cái kia, nhất là khi đoạn văn nêu yếu tố khác có thể là nguyên nhân.`,
+   ex:`<div class="passage">Adults who drank two or more cups of coffee a day had a 12% lower rate of heart disease. The study was observational, and coffee drinkers were also more physically active.</div><p><b>Statement:</b> Drinking coffee reduces the risk of heart disease.</p>`,
+   sol:[`Nghiên cứu chỉ thấy mối liên hệ. Có thể nguyên nhân thật là vận động nhiều.`,`Đáp án <b>Cannot say</b>.`]},
+  {t:'Điều kiện và ngoại lệ',
+   how:`Với các quy định kiểu "chỉ khi…", "trừ khi…", hãy kiểm tra từng điều kiện một, giống như đang làm thủ tục.`,
+   ex:`<div class="passage">Employees may book business class only for journeys longer than six hours. Flights must be booked 14 days in advance unless a director approves an exception.</div><p><b>Statement:</b> An employee may book business class for a five-hour journey if a director approves.</p>`,
+   sol:[`Ngoại lệ của giám đốc chỉ áp dụng cho thời hạn đặt vé, không áp dụng cho điều kiện 6 tiếng.`,`Chuyến 5 tiếng không đủ điều kiện hạng thương gia.`,`Đáp án <b>False</b>.`]},
+ ]},
+{key:'abs',name:'Abstract Reasoning',vi:'Suy luận trừu tượng',
+ intro:`Bạn thấy một dãy 4 hình và phải chọn hình tiếp theo. Mỗi dãy được tạo từ 1 đến 3 <b>quy luật</b> chạy cùng lúc. Với 50 câu trong 10 phút, bạn chỉ có khoảng <b>12 giây mỗi câu</b>, nên cần một cách kiểm tra cố định thay vì nhìn ngẫu hứng.`,
+ steps:[`<b>Nhìn 4 phương án trước.</b> Các phương án khác nhau ở yếu tố nào thì chỉ cần kiểm tra yếu tố đó.`,
+  `Kiểm tra theo thứ tự cố định: <b>số lượng</b> (cạnh, chấm) → <b>xoay</b> → <b>vị trí</b> → <b>màu</b> → <b>kích thước</b>.`,
+  `Tìm được một quy luật thì <b>loại ngay</b> các phương án sai quy luật đó, rồi mới tìm quy luật tiếp theo.`,
+  `Quá 20 giây chưa ra thì chọn phương án còn lại hợp lý nhất và đi tiếp.`],
+ types:[
+  {t:'Xoay',how:`Hình xoay một góc cố định mỗi bước, thường là 45° hoặc 90°. Theo dõi một điểm dễ thấy, như đầu mũi tên.`,
+   abs:{seq:[0,90,180,270].map(r=>ab('arrow',{rot:r})),opts:[ab('arrow',{rot:90}),ab('arrow',{rot:0}),ab('arrow',{rot:180}),ab('arrow',{rot:45})],ans:1},
+   sol:[`Mũi tên quay 90° theo chiều kim đồng hồ mỗi bước: lên → phải → xuống → trái.`,`Bước tiếp theo quay về hướng lên, đáp án <b>B</b>.`]},
+  {t:'Số cạnh tăng hoặc giảm',how:`Đếm số cạnh: tam giác 3, vuông 4, ngũ giác 5…`,
+   abs:{seq:[3,4,5,6].map(n=>ab('poly',{sides:n})),opts:[ab('poly',{sides:6}),ab('poly',{sides:8}),ab('poly',{sides:7}),ab('poly',{sides:5})],ans:2},
+   sol:[`3 → 4 → 5 → 6 cạnh, mỗi bước thêm 1.`,`Tiếp theo là 7 cạnh, đáp án <b>C</b>.`]},
+  {t:'Tô màu xen kẽ',how:`Hình đổi giữa tô đặc và để rỗng theo chu kỳ 2 (đặc, rỗng, đặc…) hoặc chu kỳ 3.`,
+   abs:{seq:[true,false,true,false].map(f=>ab('poly',{sides:5,fill:f})),opts:[ab('poly',{sides:5,fill:true}),ab('poly',{sides:5}),ab('poly',{sides:6,fill:true}),ab('poly',{sides:4,fill:true})],ans:0},
+   sol:[`Đặc → rỗng → đặc → rỗng.`,`Tiếp theo là đặc, và hình vẫn là ngũ giác, đáp án <b>A</b>.`],
+   trap:`Phương án C và D cũng tô đặc nhưng đổi số cạnh, trong khi dãy không thay đổi số cạnh.`},
+  {t:'Số chấm',how:`Đếm số chấm nhỏ dưới hình. Số chấm thường tăng hoặc giảm 1 mỗi bước.`,
+   abs:{seq:[1,2,3,4].map(d=>ab('poly',{sides:3,dots:d})),opts:[ab('poly',{sides:3,dots:4}),ab('poly',{sides:3,dots:6}),ab('poly',{sides:4,dots:5}),ab('poly',{sides:3,dots:5})],ans:3},
+   sol:[`1 → 2 → 3 → 4 chấm.`,`Tiếp theo là 5 chấm, hình vẫn là tam giác, đáp án <b>D</b>.`]},
+  {t:'Vị trí di chuyển',how:`Một chi tiết nhỏ (ô vuông ở góc) đi vòng quanh khung: từng góc một, hoặc nhảy sang góc đối diện.`,
+   abs:{seq:[0,1,2,3].map(c=>ab('poly',{sides:4,corner:c})),opts:[ab('poly',{sides:4,corner:2}),ab('poly',{sides:4,corner:0}),ab('poly',{sides:4,corner:3}),ab('poly',{sides:4,corner:1})],ans:1},
+   sol:[`Ô vuông đi theo chiều kim đồng hồ: trên trái → trên phải → dưới phải → dưới trái.`,`Bước tiếp theo về lại trên trái, đáp án <b>B</b>.`]},
+  {t:'Kết hợp hai quy luật',how:`Câu khó thường ghép 2–3 quy luật đơn giản. Tìm từng quy luật một rồi loại dần.`,
+   abs:{seq:[0,1,2,3].map(i=>ab('arrow',{rot:i*90,fill:i%2===0})),opts:[ab('arrow',{rot:0,fill:false}),ab('arrow',{rot:90,fill:true}),ab('arrow',{rot:0,fill:true}),ab('arrow',{rot:270,fill:true})],ans:2},
+   sol:[`Quy luật 1: xoay 90° mỗi bước, nên tiếp theo mũi tên chỉ lên. Loại B và D.`,`Quy luật 2: xen kẽ đặc và rỗng (đặc, rỗng, đặc, rỗng), nên tiếp theo là đặc. Loại A.`,`Đáp án <b>C</b>.`],
+   trap:`Mỗi phương án sai thường đúng một quy luật và sai quy luật còn lại. Đừng chọn ngay khi mới kiểm tra xong một quy luật.`},
+ ]},
+{key:'crit',name:'Critical Thinking',vi:'Tư duy phản biện',
+ intro:`Phần này dựa trên 5 kỹ năng của bài Watson-Glaser: <b>suy diễn</b>, <b>nhận ra giả định</b>, <b>suy luận</b>, <b>diễn giải</b> và <b>đánh giá lập luận</b>. Đáp án đúng là đáp án <b>chắc chắn đúng</b> theo dữ kiện, không phải đáp án nghe có lý nhất.`,
+ steps:[`Chỉ dùng dữ kiện trong đề, giống phần Verbal.`,
+  `Với câu "must be true", thử tìm <b>một trường hợp phản ví dụ</b>. Có phản ví dụ thì phương án đó sai.`,
+  `Vẽ nhanh ra giấy: hình tròn cho "all/some/no", đường thẳng cho câu xếp thứ tự.`,
+  `Cẩn thận với những phương án "nghe hợp lý" nhưng thêm thông tin đề không có.`],
+ types:[
+  {t:'Tam đoạn luận (All / Some / No)',
+   how:`Vẽ hai vòng tròn. "All A are B" là vòng A nằm trong vòng B. "Some A are B" là hai vòng giao nhau. "No A are B" là hai vòng tách rời.`,
+   ex:`<p><b>Some engineers are designers. All designers use Figma. Which must be true?</b></p><p class="muted">A. All engineers use Figma · B. Some engineers use Figma · C. All Figma users are designers · D. No engineer uses Figma</p>`,
+   sol:[`Những kỹ sư là designer nằm trong vòng designer, mà vòng designer nằm trọn trong vòng "dùng Figma".`,`Vậy ít nhất <b>một số</b> kỹ sư dùng Figma, đáp án <b>B</b>.`],
+   trap:`A sai vì không biết các kỹ sư không phải designer có dùng Figma hay không. C đảo ngược chiều của "All".`},
+  {t:'Nếu… thì…',
+   how:`Với "Nếu P thì Q", chỉ có 2 cách suy luận đúng. <b>Có P → có Q</b>. <b>Không có Q → không có P</b>. Hai cách còn lại sai: có Q không suy ra có P, không có P không suy ra không có Q.`,
+   ex:`<p><b>If a candidate passes the test, they get an interview. Nam got an interview. What follows?</b></p><p class="muted">A. Nam passed the test · B. Nam did not pass · C. It cannot be determined whether Nam passed</p>`,
+   sol:[`Có Q (được phỏng vấn) không suy ra P (đã qua test). Có thể Nam được phỏng vấn theo cách khác, ví dụ được giới thiệu.`,`Đáp án <b>C</b>.`],
+   trap:`Chọn A. Đây là lỗi "khẳng định hệ quả", bẫy kinh điển của dạng này.`},
+  {t:'Nhận ra giả định ngầm',
+   how:`Giả định là điều người nói <b>ngầm coi là đúng</b> mà không nói ra. Mẹo <b>phủ định</b>: đảo ngược phương án lại. Nếu đảo xong mà lập luận sụp đổ, đó chính là giả định.`,
+   ex:`<p><b>"We should open on Sundays because more customers will come." Which assumption does this rely on?</b></p><p class="muted">A. Rent is cheaper on Sundays · B. Customers are willing to shop on Sundays · C. Competitors are closed on Sundays</p>`,
+   sol:[`Phủ định B: "Khách không muốn mua sắm Chủ nhật". Khi đó lập luận "sẽ có thêm khách" sụp đổ.`,`Phủ định A hay C, lập luận vẫn đứng được.`,`Đáp án <b>B</b>.`]},
+  {t:'Suy luận: đúng, có thể đúng hay thiếu dữ liệu',
+   how:`Trong đề Watson-Glaser, phần Inference có 5 mức: True, Probably true, Insufficient data, Probably false, False. Chỉ chọn <b>True</b> khi dữ kiện bắt buộc điều đó. Nếu chỉ "rất có thể" thì là <b>Probably true</b>.`,
+   ex:`<div class="passage">200 students volunteered for a weekend workshop on climate policy. Most came from economics and law faculties.</div><p><b>Inference:</b> The students were interested in climate policy.</p>`,
+   sol:[`Tự nguyện đi học cuối tuần cho thấy họ rất có thể quan tâm, nhưng không chắc chắn (có thể đi vì được cộng điểm).`,`Đáp án <b>Probably true</b>.`]},
+  {t:'Diễn giải: kết luận có vượt quá dữ kiện không',
+   how:`Kết luận được chấp nhận khi nó theo sau dữ kiện "vượt qua mọi nghi ngờ hợp lý". Kết luận <b>mở rộng</b> ra nhóm khác, thời gian khác hoặc nguyên nhân khác thì không theo sau.`,
+   ex:`<p><b>A trial of 300 adults, none over 65, found the drug reduced migraines by 40%. Conclusion: the drug works for patients over 65.</b></p>`,
+   sol:[`Dữ kiện không có ai trên 65 tuổi, nên kết luận về nhóm này vượt quá dữ kiện.`,`Kết luận <b>không theo sau</b>.`]},
+  {t:'Đánh giá lập luận mạnh hay yếu',
+   how:`Lập luận <b>mạnh</b> khi vừa <b>quan trọng</b> vừa <b>liên quan trực tiếp</b> tới câu hỏi. Lập luận <b>yếu</b> khi chung chung, cảm tính, hoặc chỉ nói "người khác cũng làm".`,
+   ex:`<p><b>Should the company offer free English classes? Which is the strongest argument for "Yes"?</b></p><p class="muted">A. Classes would be fun · B. Other companies offer them · C. Many clients are international and staff need English to work with them</p>`,
+   sol:[`A là cảm tính, B là "người khác cũng làm".`,`C gắn trực tiếp với hiệu quả công việc, đáp án <b>C</b>.`]},
+  {t:'Làm yếu hoặc củng cố lập luận',
+   how:`Muốn làm yếu một kết luận nhân quả, tìm <b>nguyên nhân khác</b> hoặc chỉ ra hiện tượng <b>đã có từ trước</b>. Muốn củng cố, tìm <b>nhóm đối chứng</b> không có nguyên nhân đó và không có kết quả đó.`,
+   ex:`<p><b>Town A residents live longer than Town B residents. A council member says Town A's new hospital is the reason. Which most weakens this?</b></p><p class="muted">A. The hospital employs 500 staff · B. Town A residents already lived longer before the hospital was built · C. Town B plans a hospital</p>`,
+   sol:[`Nếu trước khi có bệnh viện người dân đã sống thọ hơn, thì bệnh viện không phải nguyên nhân.`,`Đáp án <b>B</b>.`]},
+  {t:'Xếp thứ tự',
+   how:`Vẽ một đường thẳng và đặt từng người lên theo từng dữ kiện. Bắt đầu từ dữ kiện có nhiều thông tin nhất.`,
+   ex:`<p><b>Lan finished before Minh but after Quân. Tú finished after Minh. Who finished second?</b></p>`,
+   sol:[`"Lan sau Quân, trước Minh": Quân → Lan → Minh.`,`"Tú sau Minh": Quân → Lan → Minh → Tú.`,`Người thứ hai là <b>Lan</b>.`]},
+  {t:'Các lỗi lập luận hay gặp',
+   how:`<b>Thiên kiến kẻ sống sót</b>: chỉ nhìn người thành công. <b>Khái quát vội</b>: vài ví dụ suy ra tất cả. <b>Nhầm tương quan với nhân quả</b>. <b>Ngụy biện "ai cũng làm"</b>.`,
+   ex:`<p><b>"Every successful founder I know dropped out of university, so dropping out increases your chance of success." What is the main flaw?</b></p>`,
+   sol:[`Lập luận chỉ nhìn những người bỏ học <b>và thành công</b>, bỏ qua rất nhiều người bỏ học nhưng không thành công.`,`Đây là <b>thiên kiến kẻ sống sót</b>.`]},
+ ]},
+];
+const GUIDE_SRC=[
+ ['AssessmentDay: Verbal reasoning tips','https://www.assessmentday.co.uk/resources/verbal-reasoning-tips.html'],
+ ['JobTestPrep: True / False / Cannot Say','https://www.jobtestprep.co.uk/true-false-cannot-say'],
+ ['PracticeAptitudeTests: Percentage change','https://www.practiceaptitudetests.com/resources/numerical-reasoning-test-practice-percentage-change/'],
+ ['JobTestPrep: Numerical test tips','https://www.jobtestprep.co.uk/numerical-test-tips'],
+ ['PracticeAptitudeTests: Improve abstract reasoning','https://www.practiceaptitudetests.com/resources/improve-abstract-reasoning-guide/'],
+ ['BlackStone Tutors: 60 common abstract reasoning patterns','https://www.blackstonetutors.com/60-common-abstract-reasoning-patterns/'],
+ ['AssessmentDay: Watson Glaser Critical Thinking Appraisal','https://www.assessmentday.co.uk/watson-glaser-critical-thinking.htm'],
+ ['PracticeAptitudeTests: Watson Glaser','https://www.practiceaptitudetests.com/testing-publishers/watson-glaser/'],
+];
+function guideView(focus){
+  clearInterval(tick);document.onkeydown=null;run=null;
+  const absEx=x=>`<div class="mini"><div class="seq">${x.seq.map(s=>`<div class="panel">${panelSVG(s)}</div>`).join('')}<div class="panel q">?</div></div></div>
+    <ul class="ro abs">${x.opts.map((o,j)=>`<li${j===x.ans?' class="is-ans"':''}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${j===x.ans?'<em>Đáp án đúng</em>':''}</li>`).join('')}</ul>`;
+  const typeHTML=(t,i,g)=>`<article class="gtype" id="g-${g.key}-${i}">
+    <h4><span class="gnum">${i+1}</span>${t.t}</h4>
+    <p>${t.how}</p>
+    <div class="gex"><span class="glabel">Ví dụ</span>${t.abs?absEx(t.abs):t.ex}</div>
+    <div class="gsol"><span class="glabel">Cách giải</span><ol>${t.sol.map(x=>`<li>${x}</li>`).join('')}</ol></div>
+    ${t.trap?`<p class="gtrap"><b>Bẫy hay gặp:</b> ${t.trap}</p>`:''}
+  </article>`;
+  app.innerHTML=`
+  <header class="hero" style="padding-bottom:10px">
+    <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Mẹo làm bài</h1>
+    <p class="lead">Cách nhận ra từng dạng câu hỏi và cách giải nhanh, mỗi dạng có một ví dụ cụ thể. Đề ví dụ bằng tiếng Anh giống đề thật.</p>
+  </header>
+  <div class="controls" style="margin-top:6px"><div class="chips" role="group" aria-label="Chuyển tới phần">${GUIDE.map(g=>`<button data-gto="${g.key}">${g.name}</button>`).join('')}</div></div>
+  ${GUIDE.map(g=>`<section class="gsec" id="g-${g.key}">
+    <h2>${g.name}</h2><p class="muted" style="margin-top:2px">${g.vi}</p>
+    <p class="gintro">${g.intro}</p>
+    <div class="sheet"><h3>${g.key==='all'?'Nguyên tắc':'Cách làm chung'}</h3><ol class="gsteps">${g.steps.map(x=>`<li>${x}</li>`).join('')}</ol></div>
+    ${g.types.length?`<h3 style="margin-top:22px">Các dạng thường gặp</h3><ul class="gtoc">${g.types.map((t,i)=>`<li><a href="#g-${g.key}-${i}" data-gjump="g-${g.key}-${i}">${t.t}</a></li>`).join('')}</ul>${g.types.map((t,i)=>typeHTML(t,i,g)).join('')}`:''}
+    ${g.key==='abs'?`<p style="margin-top:14px"><a href="meo-abstract-reasoning.pdf" target="_blank" rel="noopener">Tải tài liệu PDF mẹo Abstract Reasoning</a></p>`:''}
+    ${g.key!=='all'?`<div class="row" style="margin-top:16px"><button class="btn small" data-gpractice="${g.key}">Luyện riêng ${g.name}</button><button class="btn ghost small" data-gstudy="${g.key}">Xem đề và đáp án</button></div>`:''}
+  </section>`).join('')}
+  <section class="gsec"><h3>Nguồn tham khảo</h3><ul class="notes">${GUIDE_SRC.map(([t,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${t}</a></li>`).join('')}</ul></section>
+  <div class="row section-gap"><button class="btn" id="homeBtn">Về trang chính</button></div>`;
+  const go=id=>{const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})};
+  app.querySelectorAll('[data-gto]').forEach(b=>b.onclick=()=>go('g-'+b.dataset.gto));
+  app.querySelectorAll('[data-gjump]').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.gjump)});
+  app.querySelectorAll('[data-gpractice]').forEach(b=>b.onclick=()=>{const d=secDef(b.dataset.gpractice);start([{def:d,qs:build(d,level),secs:d.minutes*60}],'Luyện '+d.name)});
+  app.querySelectorAll('[data-gstudy]').forEach(b=>b.onclick=()=>studyView(level,b.dataset.gstudy));
+  document.getElementById('homeBtn').onclick=home;
+  if(focus)requestAnimationFrame(()=>go('g-'+focus));else window.scrollTo(0,0);
 }
 function studyView(lv,secKey){
   clearInterval(tick);document.onkeydown=null;run=null;level=lv;

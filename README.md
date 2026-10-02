@@ -10,6 +10,8 @@ Tính năng:
 - Tạm dừng và làm tiếp: bài đang làm được lưu sau mỗi câu, tải lại trang hoặc đóng tab vẫn làm tiếp được; đồng hồ dừng trong lúc rời đi.
 - Nộp bài sớm để xem kết quả ngay; câu chưa làm tính là sai.
 - Lịch sử: tối đa 500 lần làm, mỗi lần lưu đủ đề, đáp án đã chọn và thời gian từng câu để xem lại hoặc làm lại đúng đề đó. Có biểu đồ tiến bộ theo từng phần, lọc theo phần/người làm/mức độ, xóa, xuất/nhập file JSON.
+- Mẹo làm bài: trang hướng dẫn từng dạng đề của cả 4 phần (8 dạng Numerical, 7 dạng Verbal, 6 dạng Abstract, 9 dạng Critical Thinking), mỗi dạng có ví dụ, lời giải từng bước và bẫy hay gặp.
+- Bộ đề: Numerical sinh số liệu ngẫu nhiên từ 30 dạng câu; Verbal có 27 đoạn văn (100 statement); Critical Thinking có 42 câu cố định cùng các dạng sinh ngẫu nhiên.
 - Ôn câu sai: gom các câu làm sai hoặc chưa làm thành một đề riêng; ôn đúng câu nào thì câu đó rời khỏi danh sách.
 
 Lưu trữ:
