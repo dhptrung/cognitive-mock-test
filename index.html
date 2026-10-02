@@ -229,6 +229,8 @@ a{color:var(--ink); text-underline-offset:2px}
 .vlist{margin:12px 0 0; padding-left:1.3em} .vlist li{margin:10px 0} .vlist p{margin:0} .vlist .muted{margin-top:3px; font-size:.95rem}
 .vans{display:inline-block; font-size:.82rem; font-weight:700; border-radius:6px; padding:1px 8px; margin-left:4px; white-space:nowrap}
 .vans.v-t{background:var(--ok-bg); color:var(--ok)} .vans.v-f{background:var(--bad-bg); color:var(--bad)} .vans.v-c{background:var(--grid); color:var(--ink)}
+.morelink{font-weight:600; font-size:.95rem; text-decoration:none}
+.morelink:hover{text-decoration:underline}
 .gsec{margin-top:34px; scroll-margin-top:70px}
 .gsec h2{font-size:1.7rem}
 .gintro{max-width:68ch; margin:12px 0 16px}
@@ -1051,7 +1053,7 @@ function home(){
     <table class="structure">
       ${SECTIONS.map((d,i)=>`<tr><td class="n">${i+1}</td><td class="name">${d.name}<span class="vi">${d.vi}</span></td><td class="meta">${d.count} câu<br>${d.minutes} phút</td><td class="act"><button class="btn ghost small" data-practice="${d.key}">Luyện riêng</button></td></tr>`).join('')}
     </table>
-    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button><button class="btn ghost" id="guideBtn">Mẹo làm bài</button>${wrong.length?`<button class="btn ghost" id="reviewBtn">Ôn câu sai (${wrong.length})</button>`:''}<button class="btn ghost" id="histBtn">Lịch sử luyện tập${hist.length?` (${hist.length})`:''}</button></div>
+    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button>${wrong.length?`<button class="btn ghost" id="reviewBtn">Ôn câu sai (${wrong.length})</button>`:''}</div>
   </section>
   <section class="section-gap">
     <h3 style="margin-bottom:8px">Quy định giống đề thật</h3>
@@ -1062,21 +1064,18 @@ function home(){
       <li>Phím tắt: 1–4 hoặc A–D để chọn, Enter để trả lời.</li>
     </ul>
   </section>
-  ${hist.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><button class="btn ghost small" id="allRes">Xem lịch sử (${hist.length})</button></div><table class="hist attempts">${hist.slice(0,5).map(e=>{const sc=hScore(e);return`<tr><td>${fmtDate(e.t)}</td><td>${e.name?`<b>${esc(e.name)}</b> · `:''}${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}</td></tr>`}).join('')}</table></section>`:''}
+  ${hist.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><a href="#" class="morelink" id="allRes">Xem tất cả ${hist.length} lần làm →</a></div><table class="hist attempts">${hist.slice(0,5).map(e=>{const sc=hScore(e);return`<tr><td>${fmtDate(e.t)}</td><td>${e.name?`<b>${esc(e.name)}</b> · `:''}${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}</td></tr>`}).join('')}</table></section>`:''}
   `;
   const note=()=>{document.getElementById('lvnote').textContent={easy:'Một quy luật, phép tính một bước, đoạn văn ngắn rõ ràng.',medium:'Hai quy luật kết hợp, bảng số liệu, câu hỏi dễ nhầm giữa False và Cannot say.',hard:'Ba quy luật cùng lúc, tính nhiều bước, bẫy logic.',mixed:'Mỗi phần đi từ dễ đến khó, giống cách đề thật thường sắp xếp.'}[level]};
   note();
   app.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;app.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b));note()});
   app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
-  const ar=document.getElementById('allRes');if(ar)ar.onclick=historyView;
-  document.getElementById('histBtn').onclick=historyView;
-  document.getElementById('guideBtn').onclick=()=>guideView();
+  const ar=document.getElementById('allRes');if(ar)ar.onclick=e=>{e.preventDefault();historyView()};
   const rv=document.getElementById('reviewBtn');if(rv)rv.onclick=()=>startReview(wrong);
   if(saved){document.getElementById('resumeBtn').onclick=()=>resumeRun(saved);
     document.getElementById('dropBtn').onclick=()=>{if(confirm('Bỏ bài đang làm dở? Kết quả bài này sẽ không được lưu.')){clearRun();home()}}}
   const who=document.getElementById('who');
   who.oninput=()=>{setName(who.value);syncHeader();if(who.value.trim()){who.removeAttribute('aria-invalid');document.getElementById('whoErr').hidden=true}};
-  document.getElementById('study').onclick=()=>studyView(level,'num');
   document.getElementById('startFull').onclick=()=>start(SECTIONS.map(d=>({def:d,qs:build(d,level),secs:d.minutes*60})),'Thi thử đầy đủ');
   app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>{const d=SECTIONS.find(x=>x.key===b.dataset.practice);start([{def:d,qs:build(d,level),secs:d.minutes*60}],'Luyện '+d.name)});
 }
