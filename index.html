@@ -160,6 +160,22 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .why p{margin:0}
 .why .tip{margin-top:6px; font-size:.92rem; color:var(--muted)}
 .empty{padding:28px 0; color:var(--muted)}
+.trends{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:16px}
+.trend{border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--card); display:grid; grid-template-columns:1fr auto; gap:2px 12px; align-items:center}
+.trend b{font-size:.98rem}
+.trend .big{font-family:var(--display); font-size:1.4rem; color:var(--ink); font-variant-numeric:tabular-nums; text-align:right}
+.trend .muted{font-size:.88rem; grid-column:1/-1}
+.trend .delta{font-size:.88rem; font-weight:700}
+.delta.up{color:var(--ok)} .delta.down{color:var(--bad)}
+.spark{width:100%; max-width:220px; height:34px; grid-column:1/-1; display:block}
+.spark line{stroke:var(--line); stroke-dasharray:3 3}
+.spark polyline{fill:none; stroke:var(--ink); stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+.spark circle{fill:var(--ink)}
+.secmini{font-size:.86rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.hist .acts{white-space:nowrap; text-align:right; width:1%}
+.hist .acts .btn + .btn{margin-left:6px}
+.btn.danger{border-color:var(--bad); color:var(--bad)}
+@media (max-width:560px){.trends{grid-template-columns:minmax(0,1fr)} .hist .secmini{display:none} .hist td{font-size:.9rem} .hist .acts .btn{display:block; width:100%; padding:6px 10px} .hist .acts .btn + .btn{margin:6px 0 0}}
 .attempts td{padding:9px 4px; border-bottom:1px dashed var(--line); vertical-align:middle}
 @media (max-width:560px){.statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){
@@ -467,6 +483,26 @@ const AKEY='cogmock.attempts';
 function loadAttempts(){try{return JSON.parse(localStorage.getItem(AKEY))||[]}catch(e){return[]}}
 function saveAttempt(a){try{let l=[a,...loadAttempts().filter(x=>x.id!==a.id)].slice(0,15);
   while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}catch(e){}}
+/* Lịch sử gọn: chỉ lưu điểm từng phần nên giữ được nhiều lần làm hơn bản chi tiết ở trên. */
+const HKEY='cogmock.history',HMAX=500;
+const summarize=a=>({id:a.id,t:a.t,label:a.label,level:a.level,
+  secs:a.sections.map(s=>({key:s.key,c:s.qs.filter((q,i)=>s.answers[i]===q.ans).length,n:s.qs.length,used:s.used,secs:s.secs}))});
+function saveHistory(h){try{localStorage.setItem(HKEY,JSON.stringify(h.sort((a,b)=>b.t-a.t).slice(0,HMAX)))}catch(e){}}
+function loadHistory(){
+  let raw=null;try{raw=localStorage.getItem(HKEY)}catch(e){return[]}
+  if(raw!==null){try{return JSON.parse(raw)||[]}catch(e){return[]}}
+  const h=loadAttempts().map(summarize);saveHistory(h);return h;
+}
+function addHistory(e){saveHistory([e,...loadHistory().filter(x=>x.id!==e.id)])}
+function removeHistory(id){saveHistory(loadHistory().filter(x=>x.id!==id));try{localStorage.setItem(AKEY,JSON.stringify(loadAttempts().filter(x=>x.id!==id)))}catch(e){}}
+function clearHistory(){try{localStorage.removeItem(AKEY);localStorage.setItem(HKEY,'[]')}catch(e){}}
+const hScore=e=>e.secs.reduce((a,s)=>({c:a.c+s.c,n:a.n+s.n}),{c:0,n:0});
+const pctOf=(c,n)=>n?Math.round(c/n*100):0;
+function cleanEntry(e){
+  if(!e||typeof e!=='object'||!Array.isArray(e.secs)||!Number.isFinite(+e.t))return null;
+  const secs=e.secs.filter(s=>s&&SECTIONS.some(d=>d.key===s.key)).map(s=>({key:s.key,c:Math.max(0,+s.c|0),n:Math.max(0,+s.n|0),used:+s.used||0,secs:+s.secs||0})).filter(s=>s.n);
+  return secs.length?{id:String(e.id||e.t),t:+e.t,label:String(e.label||'Bài làm'),level:LEVELS[e.level]?e.level:'mixed',secs}:null;
+}
 const fmtDate=t=>new Date(t).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(s.answers[i]===q.ans)c++}));return{c,n}};
 
@@ -477,7 +513,7 @@ const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padSta
 
 function home(){
   clearInterval(tick);run=null;document.onkeydown=null;
-  const atts=loadAttempts();
+  const hist=loadHistory(),detail=new Set(loadAttempts().map(a=>a.id));
   const total=SECTIONS.reduce((s,d)=>s+d.minutes,0);
   app.innerHTML=`
   <header class="hero">
@@ -504,13 +540,13 @@ function home(){
       <li>Phím tắt: 1–4 hoặc A–D để chọn, Enter để trả lời.</li>
     </ul>
   </section>
-  ${atts.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><button class="btn ghost small" id="allRes">Xem tất cả kết quả</button></div><table class="hist attempts">${atts.slice(0,5).map(a=>{const sc=scoreOf(a);return`<tr><td>${fmtDate(a.t)}</td><td>${esc(a.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[a.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%"><button class="btn ghost small" data-att="${a.id}">Xem</button></td></tr>`}).join('')}</table></section>`:''}
+  ${hist.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><button class="btn ghost small" id="allRes">Xem lịch sử (${hist.length})</button></div><table class="hist attempts">${hist.slice(0,5).map(e=>{const sc=hScore(e);return`<tr><td>${fmtDate(e.t)}</td><td>${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}</td></tr>`}).join('')}</table></section>`:''}
   `;
   const note=()=>{document.getElementById('lvnote').textContent={easy:'Một quy luật, phép tính một bước, đoạn văn ngắn rõ ràng.',medium:'Hai quy luật kết hợp, bảng số liệu, câu hỏi dễ nhầm giữa False và Cannot say.',hard:'Ba quy luật cùng lúc, tính nhiều bước, bẫy logic.',mixed:'Mỗi phần đi từ dễ đến khó, giống cách đề thật thường sắp xếp.'}[level]};
   note();
   app.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;app.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b));note()});
   app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
-  const ar=document.getElementById('allRes');if(ar)ar.onclick=attemptList;
+  const ar=document.getElementById('allRes');if(ar)ar.onclick=historyView;
   document.getElementById('study').onclick=()=>studyView(level,'num');
   document.getElementById('startFull').onclick=()=>start(SECTIONS.map(d=>({def:d,qs:build(d,level),secs:d.minutes*60})),'Thi thử đầy đủ');
   app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>{const d=SECTIONS.find(x=>x.key===b.dataset.practice);start([{def:d,qs:build(d,level),secs:d.minutes*60}],'Luyện '+d.name)});
@@ -594,7 +630,7 @@ function endSection(){
 function results(){
   const a={id:String(Date.now()),t:Date.now(),label:run.label,level:run.level,
     sections:run.sections.map(s=>({key:s.def.key,secs:s.secs,used:Math.round(s.used),qs:s.qs,answers:s.answers,times:s.times}))};
-  saveAttempt(a);showAttempt(a);
+  addHistory(summarize(a));saveAttempt(a);showAttempt(a);
 }
 const TIPS={
   num:'Đọc câu hỏi trước rồi mới tìm số liệu. % thay đổi luôn chia cho giá trị ban đầu; tăng rồi giảm thì nhân hệ số.',
@@ -603,15 +639,85 @@ const TIPS={
   crit:'Đáp án phải đúng trong mọi trường hợp. Với "nếu P thì Q": thấy Q không suy ra được P, không có P cũng không suy ra được không có Q.'};
 const secDef=k=>SECTIONS.find(d=>d.key===k);
 const status=(s,i)=>{const a=s.answers[i];return a===null?'skip':a===s.qs[i].ans?'ok':'bad'};
-function attemptList(){
-  clearInterval(tick);document.onkeydown=null;
-  const atts=loadAttempts();
-  app.innerHTML=`<header class="hero"><h1 style="font-size:clamp(2rem,5vw,2.8rem)">Kết quả của bạn</h1><p class="lead">Lưu 15 lần làm gần nhất trên trình duyệt này.</p></header>
-  ${atts.length?`<div class="sheet"><table class="hist attempts">${atts.map(a=>{const sc=scoreOf(a);return`<tr><td>${fmtDate(a.t)}</td><td>${esc(a.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[a.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b><br><span class="muted" style="font-size:.88rem">${Math.round(sc.c/sc.n*100)}%</span></td><td style="text-align:right;width:1%"><button class="btn ghost small" data-att="${a.id}">Xem</button></td></tr>`}).join('')}</table></div>`
-  :`<p class="empty">Chưa có lần làm nào. Làm một bài thi thử để xem kết quả tại đây.</p>`}
-  <div class="row section-gap"><button class="btn" id="homeBtn">Về trang chính</button></div>`;
-  app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>showAttempt(atts.find(x=>x.id===b.dataset.att)));
-  document.getElementById('homeBtn').onclick=home;window.scrollTo(0,0);
+function spark(v){
+  const w=220,h=34,p=4,x=i=>v.length<2?w/2:p+i*(w-2*p)/(v.length-1),y=n=>h-p-n/100*(h-2*p);
+  return`<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${w}" y1="${y(50)}" y2="${y(50)}"/>${v.length>1?`<polyline points="${v.map((n,i)=>x(i).toFixed(1)+','+y(n).toFixed(1)).join(' ')}"/>`:''}<circle cx="${x(v.length-1).toFixed(1)}" cy="${y(v[v.length-1]).toFixed(1)}" r="3"/></svg>`;
+}
+function historyView(){
+  clearInterval(tick);document.onkeydown=null;run=null;
+  const view={sec:'all',lv:'all'};
+  const render=()=>{
+    const all=loadHistory(),detail=new Set(loadAttempts().map(a=>a.id));
+    const byLv=all.filter(e=>view.lv==='all'||e.level===view.lv);
+    const rows=byLv.filter(e=>view.sec==='all'||e.secs.some(s=>s.key===view.sec));
+    const sc=e=>view.sec==='all'?hScore(e):e.secs.find(s=>s.key===view.sec);
+    const tot=rows.reduce((a,e)=>{const s=sc(e);return{c:a.c+s.c,n:a.n+s.n}},{c:0,n:0});
+    const best=rows.reduce((m,e)=>{const s=sc(e);return Math.max(m,pctOf(s.c,s.n))},0);
+    const days=new Set(rows.map(e=>new Date(e.t).toDateString())).size;
+    const trends=SECTIONS.map(d=>{
+      const v=byLv.filter(e=>e.secs.some(s=>s.key===d.key)).slice(0,20).reverse().map(e=>{const s=e.secs.find(s=>s.key===d.key);return pctOf(s.c,s.n)});
+      if(!v.length)return'';
+      const last=v[v.length-1],avg=Math.round(v.reduce((a,b)=>a+b,0)/v.length),prev=v.length>1?v[v.length-2]:null,dl=prev===null?0:last-prev;
+      return`<div class="trend"><b>${d.name}</b><span class="big">${last}%</span>${spark(v)}<span class="muted">Trung bình ${avg}% · ${v.length} lần gần nhất${prev!==null&&dl?` · <span class="delta ${dl>0?'up':'down'}">${dl>0?'+':''}${dl} điểm so với lần trước</span>`:''}</span></div>`;
+    }).join('');
+    app.innerHTML=`
+    <header class="hero"><h1 style="font-size:clamp(2rem,5vw,2.8rem)">Lịch sử luyện tập</h1>
+      <p class="lead">Lưu tối đa ${HMAX} lần làm trên trình duyệt này. Xem lại chi tiết từng câu được với ${15} lần gần nhất.</p></header>
+    <div class="controls" style="margin-top:0">
+      <div class="chips" role="group" aria-label="Chọn phần"><button data-sec="all" aria-pressed="${view.sec==='all'}">Tất cả phần</button>${SECTIONS.map(d=>`<button data-sec="${d.key}" aria-pressed="${view.sec===d.key}">${d.name}</button>`).join('')}</div>
+      <div class="chips" role="group" aria-label="Mức độ"><button data-hl="all" aria-pressed="${view.lv==='all'}">Mọi mức độ</button>${Object.entries(LEVELS).map(([k,v])=>`<button data-hl="${k}" aria-pressed="${view.lv===k}">${v}</button>`).join('')}</div>
+    </div>
+    ${rows.length?`
+    <section class="sheet" style="margin-top:18px">
+      <div class="statgrid" style="margin-top:0">
+        <div class="stat"><b>${rows.length}</b><span>Lần làm</span></div>
+        <div class="stat"><b>${tot.n}</b><span>Câu đã làm</span></div>
+        <div class="stat"><b>${pctOf(tot.c,tot.n)}%</b><span>Tỉ lệ đúng chung</span></div>
+        <div class="stat"><b>${best}%</b><span>Cao nhất</span></div>
+        <div class="stat"><b>${mmss(rows.reduce((a,e)=>a+(view.sec==='all'?e.secs.reduce((x,s)=>x+s.used,0):sc(e).used),0))}</b><span>Tổng thời gian</span></div>
+        <div class="stat"><b>${days}</b><span>Ngày luyện tập</span></div>
+      </div>
+      ${trends?`<h3 style="margin-top:22px">Tiến bộ theo từng phần</h3><div class="trends">${trends}</div>`:''}
+    </section>
+    <section class="sheet section-gap"><table class="hist attempts">${rows.map(e=>{const s=sc(e);return`<tr>
+      <td>${fmtDate(e.t)}</td>
+      <td>${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span>${e.secs.length>1?`<br><span class="secmini">${e.secs.map(x=>`${secDef(x.key).name.split(' ')[0]} ${x.c}/${x.n}`).join(' · ')}</span>`:''}</td>
+      <td style="text-align:right"><b>${s.c}/${s.n}</b><br><span class="muted" style="font-size:.88rem">${pctOf(s.c,s.n)}%</span></td>
+      <td class="acts">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}<button class="btn ghost small danger" data-del="${esc(e.id)}" aria-label="Xóa lần làm ${esc(fmtDate(e.t))}">Xóa</button></td>
+    </tr>`}).join('')}</table></section>`
+    :`<p class="empty">${all.length?'Không có lần làm nào khớp bộ lọc này.':'Chưa có lần làm nào. Làm một bài thi thử để lịch sử hiện ở đây.'}</p>`}
+    <div class="row section-gap">
+      <button class="btn" id="homeBtn">Về trang chính</button>
+      ${all.length?`<button class="btn ghost" id="exportBtn">Xuất file lịch sử</button>`:''}
+      <button class="btn ghost" id="importBtn">Nhập file lịch sử</button>
+      ${all.length?`<button class="btn ghost danger" id="clearBtn">Xóa toàn bộ</button>`:''}
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>`;
+    app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{view.sec=b.dataset.sec;render()});
+    app.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{view.lv=b.dataset.hl;render()});
+    app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
+    app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Xóa lần làm này khỏi lịch sử?')){removeHistory(b.dataset.del);render()}});
+    document.getElementById('homeBtn').onclick=home;
+    const ex=document.getElementById('exportBtn');if(ex)ex.onclick=()=>{
+      const blob=new Blob([JSON.stringify({app:'cogmock',version:1,exportedAt:Date.now(),history:loadHistory(),attempts:loadAttempts()})],{type:'application/json'});
+      const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=`lich-su-cognitive-test-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);
+    };
+    const cl=document.getElementById('clearBtn');if(cl)cl.onclick=()=>{if(confirm('Xóa toàn bộ lịch sử và kết quả chi tiết? Thao tác này không hoàn tác được.')){clearHistory();render()}};
+    const fi=document.getElementById('importFile');
+    document.getElementById('importBtn').onclick=()=>fi.click();
+    fi.onchange=()=>{const f=fi.files[0];if(!f)return;f.text().then(txt=>{
+      const d=JSON.parse(txt),inH=(Array.isArray(d)?d:d.history||[]).map(cleanEntry).filter(Boolean);
+      const inA=Array.isArray(d.attempts)?d.attempts.filter(a=>a&&a.id&&Array.isArray(a.sections)&&a.sections.every(s=>secDef(s.key)&&Array.isArray(s.qs)&&Array.isArray(s.answers)&&Array.isArray(s.times))):[];
+      if(!inH.length&&!inA.length)throw new Error('empty');
+      const have=new Set(loadHistory().map(e=>e.id)),added=inH.filter(e=>!have.has(e.id)).length;
+      saveHistory([...loadHistory().filter(e=>!inH.some(x=>x.id===e.id)),...inH]);
+      if(inA.length){const ids=new Set(inA.map(a=>String(a.id)));let l=[...loadAttempts().filter(a=>!ids.has(a.id)),...inA.map(a=>({...a,id:String(a.id)}))].sort((a,b)=>b.t-a.t).slice(0,15);
+        while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}
+      render();alert(`Đã nhập ${added} lần làm mới.`);
+    }).catch(()=>alert('File không đúng định dạng lịch sử của trang này.'))};
+  };
+  render();window.scrollTo(0,0);
 }
 function showAttempt(att){
   clearInterval(tick);document.onkeydown=null;run=null;
@@ -634,7 +740,7 @@ function showAttempt(att){
       <div class="stat"><b>${skipped}</b><span>Chưa trả lời</span></div>
       <div class="stat"><b>${mmss(used)}</b><span>Tổng thời gian / ${mmss(total)}</span></div>
     </div>
-    <div class="row" style="margin-top:20px"><button class="btn" id="again">Làm đề mới cùng cấu trúc</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Các lần làm khác</button></div>
+    <div class="row" style="margin-top:20px"><button class="btn" id="again">Làm đề mới cùng cấu trúc</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Lịch sử</button></div>
   </section>
   <div class="controls">
     <div class="chips" role="group" aria-label="Chọn phần">${att.sections.length>1?`<button data-sec="all" aria-pressed="true">Tất cả phần</button>`:''}${att.sections.map((s,k)=>`<button data-sec="${s.key}" aria-pressed="${att.sections.length===1}">${secDef(s.key).name}</button>`).join('')}</div>
@@ -680,7 +786,7 @@ function showAttempt(att){
   draw();
   document.getElementById('again').onclick=()=>{level=att.level;start(SECTIONS.filter(d=>att.sections.some(s=>s.key===d.key)).map(d=>({def:d,qs:build(d,att.level),secs:d.minutes*60})),att.label)};
   document.getElementById('homeBtn').onclick=home;
-  document.getElementById('listBtn').onclick=attemptList;
+  document.getElementById('listBtn').onclick=historyView;
   window.scrollTo(0,0);
 }
 function studyView(lv,secKey){
