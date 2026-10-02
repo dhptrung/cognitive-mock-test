@@ -529,7 +529,7 @@ function home(){
     <table class="structure">
       ${SECTIONS.map((d,i)=>`<tr><td class="n">${i+1}</td><td class="name">${d.name}<span class="vi">${d.vi}</span></td><td class="meta">${d.count} câu<br>${d.minutes} phút</td><td class="act"><button class="btn ghost small" data-practice="${d.key}">Luyện riêng</button></td></tr>`).join('')}
     </table>
-    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button></div>
+    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button><button class="btn ghost" id="histBtn">Lịch sử luyện tập${hist.length?` (${hist.length})`:''}</button></div>
   </section>
   <section class="section-gap">
     <h3 style="margin-bottom:8px">Quy định giống đề thật</h3>
@@ -547,6 +547,7 @@ function home(){
   app.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;app.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b));note()});
   app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
   const ar=document.getElementById('allRes');if(ar)ar.onclick=historyView;
+  document.getElementById('histBtn').onclick=historyView;
   document.getElementById('study').onclick=()=>studyView(level,'num');
   document.getElementById('startFull').onclick=()=>start(SECTIONS.map(d=>({def:d,qs:build(d,level),secs:d.minutes*60})),'Thi thử đầy đủ');
   app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>{const d=SECTIONS.find(x=>x.key===b.dataset.practice);start([{def:d,qs:build(d,level),secs:d.minutes*60}],'Luyện '+d.name)});
