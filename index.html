@@ -100,6 +100,8 @@ table.data th:first-child,table.data td:first-child{text-align:left}
 table.data th{color:var(--ink); font-weight:700}
 .tablewrap{overflow-x:auto; max-width:100%}
 .seq{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; max-width:520px; margin-bottom:22px}
+.mgrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; max-width:330px; margin-bottom:22px}
+.mini .mgrid{max-width:230px; margin-bottom:8px}
 .panel{background:var(--card); border:1.5px solid var(--line); border-radius:8px; color:var(--text); aspect-ratio:1; display:grid; place-items:center}
 .panel svg{width:100%; height:100%; display:block}
 .panel.q{border-style:dashed; border-color:var(--ink-soft); font-family:var(--display); font-weight:800; font-size:2rem; color:var(--ink-soft)}
@@ -133,6 +135,10 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .stat b{display:block; font-family:var(--display); font-size:1.4rem; color:var(--ink); font-variant-numeric:tabular-nums}
 .stat span{font-size:.9rem; color:var(--muted)}
 .controls{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--paper); padding:12px 0 10px; border-bottom:1px solid var(--line); margin-top:26px}
+.controls{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:12px; align-items:start}
+.controls > .chips{grid-column:2}
+.controls > .homelink{grid-column:1; grid-row:1 / span 3; white-space:nowrap}
+@media (max-width:560px){.controls > .homelink{padding:6px 10px}}
 .chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px}
 .chips button{flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); border-radius:999px; padding:5px 12px; font-size:.92rem; font-weight:600}
 .chips button[aria-pressed="true"]{border-color:var(--ink); background:var(--ink); color:var(--card)}
@@ -284,31 +290,37 @@ hard:[
 ]};
 
 /* ---------- abstract ---------- */
-function genAbs(level){
+function genSeries(level){
   const nr={easy:1,medium:2,hard:3}[level];let rules;
-  do{rules=shuffle(['rot','sides','fill','dots','corner']).slice(0,nr)}while(rules.includes('rot')&&rules.includes('sides'));
+  do{rules=shuffle(['rot','sides','fill','dots','corner','size','dash']).slice(0,nr)}while(rules.includes('rot')&&rules.includes('sides')||rules.includes('dash')&&rules.includes('fill'));
   const P={};
   if(rules.includes('rot'))P.rot={start:pick([0,45,90,135,180,225,270,315]),step:pick(level==='easy'?[90]:level==='medium'?[45,90]:[45,135])*pick([1,-1])};
   if(rules.includes('sides'))P.sides=level==='hard'&&Math.random()<.5?{start:7,step:-1}:{start:3,step:1};
   if(rules.includes('fill'))P.fill={period:level==='hard'?pick([2,3]):2,phase:R(0,1)};
   if(rules.includes('dots'))P.dots=level==='hard'&&Math.random()<.5?{start:5,step:-1}:{start:1,step:1};
+  if(rules.includes('size'))P.size=level==='easy'||Math.random()<.5?{vals:[1,.65],start:R(0,1)}:{vals:[.6,.8,1],start:0};
+  if(rules.includes('dash'))P.dash={phase:R(0,1)};
   if(rules.includes('corner'))P.corner={start:R(0,3),step:pick(level==='easy'?[1]:level==='medium'?[1,3]:[1,2,3])};
   const shape=P.sides?'poly':P.rot?'arrow':pick(['arrow','poly']);
-  const base={sides:R(3,6),rot:shape==='arrow'?pick([0,90,180,270]):0,fill:Math.random()<.5,dots:level==='easy'?0:R(0,3),corner:level==='hard'?R(0,3):-1};
+  const base={sides:R(3,6),rot:shape==='arrow'?pick([0,90,180,270]):0,fill:!P.dash&&Math.random()<.5,dots:level==='easy'?0:R(0,3),corner:level==='hard'?R(0,3):-1,scale:1,dash:false};
   const st=i=>({shape,
     sides:P.sides?P.sides.start+i*P.sides.step:base.sides,
     rot:P.rot?(((P.rot.start+i*P.rot.step)%360)+360)%360:base.rot,
     fill:P.fill?((i+P.fill.phase)%P.fill.period===0):base.fill,
     dots:P.dots?P.dots.start+i*P.dots.step:base.dots,
-    corner:P.corner?(P.corner.start+i*P.corner.step)%4:base.corner});
+    corner:P.corner?(P.corner.start+i*P.corner.step)%4:base.corner,
+    scale:P.size?P.size.vals[(P.size.start+i)%P.size.vals.length]:base.scale,
+    dash:P.dash?(i+P.dash.phase)%2===0:base.dash});
   const seq=[0,1,2,3].map(st),A=st(4),m=o=>({...A,...o});
   const groups=[];
   if(P.rot)groups.push(shuffle([m({rot:(A.rot+P.rot.step+360)%360}),m({rot:(A.rot+180)%360}),m({rot:seq[3].rot})]));
   if(P.sides)groups.push(shuffle([m({sides:A.sides+1}),m({sides:Math.max(3,A.sides-1)})]));
   if(P.fill)groups.push([m({fill:!A.fill})]);
   if(P.dots)groups.push(shuffle([m({dots:A.dots+1}),m({dots:Math.max(0,A.dots-1)})]));
+  if(P.size)groups.push(shuffle([.6,.8,1,.65].filter(x=>x!==A.scale)).slice(0,2).map(x=>m({scale:x})));
+  if(P.dash)groups.push([m({dash:!A.dash})]);
   if(P.corner)groups.push(shuffle([m({corner:(A.corner+1)%4}),m({corner:(A.corner+2)%4})]));
-  const extra=shuffle([m({fill:!A.fill}),m({dots:A.dots+1}),shape==='arrow'?m({rot:(A.rot+90)%360}):m({sides:A.sides+1}),m({dots:Math.max(0,A.dots-1)})]);
+  const extra=shuffle([P.dash?m({scale:A.scale===1?.75:1}):m({fill:!A.fill}),m({dots:A.dots+1}),shape==='arrow'?m({rot:(A.rot+90)%360}):m({sides:A.sides+1}),m({dots:Math.max(0,A.dots-1)})]);
   const key=s=>JSON.stringify(s),seen=new Set([key(A)]),ds=[];
   const add=s=>{if(ds.length<3&&!seen.has(key(s))){seen.add(key(s));ds.push(s)}};
   for(let r=0;r<3;r++)for(const g of groups)if(g[r])add(g[r]);
@@ -320,18 +332,127 @@ function genAbs(level){
   if(P.sides)ex.push(`số cạnh của hình ${P.sides.step>0?'tăng':'giảm'} 1 mỗi bước`);
   if(P.fill)ex.push(P.fill.period===2?'hình xen kẽ tô đặc và để rỗng':'cứ 3 hình thì có 1 hình tô đặc');
   if(P.dots)ex.push(`số chấm ${P.dots.step>0?'tăng':'giảm'} 1 mỗi bước`);
+  if(P.size)ex.push(P.size.vals.length===2?'hình xen kẽ to và nhỏ':'hình to dần qua 3 cỡ rồi quay lại cỡ nhỏ nhất');
+  if(P.dash)ex.push('viền hình xen kẽ nét liền và nét đứt');
   if(P.corner)ex.push(`ô vuông nhỏ ${P.corner.step===1?'đi 1 góc theo chiều kim đồng hồ':P.corner.step===3?'đi 1 góc ngược chiều kim đồng hồ':'nhảy sang góc đối diện'}`);
   const e=ex.join('; ');
   return{seq,opts,ans:opts.indexOf(A),exp:`Quy luật: ${e.charAt(0).toUpperCase()+e.slice(1)}.${ex.length>1?' Đáp án đúng phải thỏa mãn tất cả quy luật cùng lúc; mỗi phương án sai thường chỉ sai một yếu tố.':''}`};
 }
+/* ---------- abstract: các dạng ngoài dãy hình ----------
+   form: undefined = dãy hình (kể cả hai chuỗi xen kẽ), 'matrix' = lưới 3×3, 'odd' = tìm hình khác loại. */
+const ABS0={shape:'poly',sides:4,rot:0,fill:false,dots:0,corner:-1,scale:1,dash:false};
+const absKey=s=>JSON.stringify(s);
+const mod360=x=>((x%360)+360)%360;
+// Chọn tối đa n phương án nhiễu khác nhau và khác đáp án, theo thứ tự ưu tiên.
+function absOpts(A,cands,exp,extra={}){
+  const seen=new Set([absKey(A)]),ds=[];
+  for(const c of cands)if(ds.length<3&&!seen.has(absKey(c))){seen.add(absKey(c));ds.push(c)}
+  const opts=shuffle([A,...ds]);
+  return{...extra,opts,ans:opts.indexOf(A),exp};
+}
+const ABS_TEXT={matrix:'Which figure completes the grid?',odd:'Which figure is the odd one out?'};
+function absStem(q){
+  const p=s=>`<div class="panel">${panelSVG(s)}</div>`;
+  if(q.form==='matrix')return`<div class="mgrid">${q.grid.map(p).join('')}<div class="panel q">?</div></div>`;
+  if(q.form==='odd')return'';
+  return`<div class="seq">${q.seq.map(p).join('')}<div class="panel q">?</div></div>`;
+}
+
+function genOdd(level){
+  const v=level==='easy'?'sides':level==='medium'?pick(['sides','dotsides']):pick(['dotsides','point']);
+  const fills=shuffle([true,true,false,false]);
+  let figs,exp;
+  if(v==='sides'){
+    // 4 tổ hợp màu/chấm/cỡ khác nhau, mỗi yếu tố chia đều hai–hai, nên chỉ số cạnh là khác biệt duy nhất
+    const n=R(3,6),m=n===3?4:n+pick([1,-1]),d=shuffle([R(0,1),R(2,3)]),combo=shuffle([[true,d[0],1],[true,d[1],.8],[false,d[0],.8],[false,d[1],1]]);
+    figs=combo.map(([f,dt,sz],i)=>({...ABS0,sides:i===0?m:n,fill:f,dots:dt,scale:sz}));
+    exp=`Ba hình có ${n} cạnh, chỉ một hình có ${m} cạnh. Màu, số chấm và kích thước được chia đều hai–hai nên không phải yếu tố khác biệt.`;
+  }else if(v==='dotsides'){
+    const sides=shuffle([3,4,5,6,7]).slice(0,4),off=pick([1,-1]);
+    figs=sides.map((n,i)=>({...ABS0,sides:n,dots:i===0?n-2+off:n-2,fill:fills[i]}));
+    exp=`Ở ba hình, số chấm luôn ít hơn số cạnh đúng 2. Hình khác loại có ${figs[0].sides} cạnh nhưng ${figs[0].dots} chấm. Số cạnh khác nhau ở cả bốn hình nên không tự nó là quy luật.`;
+  }else{
+    const corners=shuffle([0,1,2,3]),toward=[315,45,135,225];
+    figs=corners.map((c,i)=>({...ABS0,shape:'arrow',corner:c,fill:fills[i],rot:i===0?mod360(toward[c]+pick([90,180,270])):toward[c]}));
+    exp='Ở ba hình, mũi tên chỉ thẳng vào ô vuông nhỏ ở góc. Hình khác loại có mũi tên chỉ hướng khác.';
+  }
+  const odd=figs[0],opts=shuffle(figs);
+  return{form:'odd',seq:[],opts,ans:opts.indexOf(odd),exp:`Quy luật: ${exp}`};
+}
+
+function genMatrix(level){
+  const V={sides:shuffle([3,4,5]),dots:shuffle([0,1,2]),scale:shuffle([.6,.8,1]),corner:shuffle([0,1,2,3]).slice(0,3)};
+  const name={sides:'số cạnh',dots:'số chấm',scale:'kích thước',corner:'vị trí ô vuông nhỏ'};
+  const fill=Math.random()<.5;
+  let cell,attrs,rule;
+  if(level==='hard'){
+    // kiểu Raven: mỗi giá trị xuất hiện đúng một lần trên mỗi hàng và mỗi cột
+    const la=pick(['sides','dots']),rb=pick(['scale','corner']);
+    cell=(r,c)=>({...ABS0,fill,[la]:V[la][(r+c)%3],[rb]:V[rb][r]});attrs=[la,rb];
+    rule=`${cap(name[la])}: mỗi hàng và mỗi cột có đủ 3 giá trị (${V[la].join(', ')}), không lặp lại. ${cap(name[rb])} giống nhau trong cùng một hàng.`;
+  }else{
+    const ra=pick(['sides','scale']),ca=pick(['dots','corner']);
+    cell=(r,c)=>({...ABS0,fill,[ra]:V[ra][r],[ca]:V[ca][c]});attrs=[ra,ca];
+    rule=`${cap(name[ra])} giống nhau trong cùng một hàng; ${name[ca]} giống nhau trong cùng một cột.`;
+  }
+  const grid=[];for(let r=0;r<3;r++)for(let c=0;c<3;c++)if(r<2||c<2)grid.push(cell(r,c));
+  const A=cell(2,2),m=o=>({...A,...o}),cands=[];
+  for(const k of attrs)V[k].filter(x=>x!==A[k]).forEach(x=>cands.push(m({[k]:x})));
+  return absOpts(A,[...shuffle(cands),m({fill:!fill})],`Quy luật: ${rule} Ô còn thiếu phải thỏa mãn cả hai điều kiện.`,{form:'matrix',grid,seq:[]});
+}
+
+function genOverlay(level){
+  const op=level==='hard'?'xor':'or',bits=x=>x.toString(2).replace(/0/g,'').length;
+  const f=(a,b)=>op==='xor'?a^b:a|b;
+  const rnd=()=>{let m;do{m=R(1,255)}while(bits(m)<2||bits(m)>4);return m};
+  const row=()=>{let a,b,c;do{a=rnd();b=rnd();c=f(a,b)}while(a===b||!c||c===a||c===b);return[a,b,c]};
+  const rows=[row(),row(),row()],L=x=>({...ABS0,shape:'lines',mask:x});
+  const [a,b,c]=rows[2];
+  const cands=[...(op==='xor'?[a|b,a&b]:[a^b,a,b]),...shuffle([0,1,2,3,4,5,6,7]).map(i=>c^(1<<i))].filter(x=>x>0);
+  return absOpts(L(c),cands.map(L),op==='xor'
+    ?'Quy luật: Ở mỗi hàng, hình thứ ba là hai hình đầu chồng lên nhau, nhưng nét nào có ở cả hai hình thì bị xóa. Cách làm: so từng nét một, nét xuất hiện đúng một lần thì giữ.'
+    :'Quy luật: Ở mỗi hàng, hình thứ ba gộp tất cả các nét của hai hình đầu. Kiểm tra từng nét: có ở hình 1 hoặc hình 2 thì phải có ở hình 3.',
+    {form:'matrix',grid:rows.flat().slice(0,8).map(L),seq:[]});
+}
+
+function genAlt(){
+  const stepA=pick([90,-90,45,-45]),r0=pick([0,90,180,270]),fillA=Math.random()<.5,s0=R(3,4),dotsB=R(0,2);
+  const a=i=>({...ABS0,shape:'arrow',rot:mod360(r0+i*stepA),fill:fillA});
+  const b=i=>({...ABS0,sides:s0+i,dots:dotsB,fill:!fillA});
+  const A=a(2);
+  const dir=stepA>0?'theo chiều kim đồng hồ':'ngược chiều kim đồng hồ';
+  return absOpts(A,[b(2),a(3),a(1),{...A,fill:!fillA}],
+    `Quy luật: Dãy gồm hai chuỗi xen kẽ. Hình 1, 3, 5 là mũi tên xoay ${dir} ${Math.abs(stepA)}° sau mỗi lần xuất hiện. Hình 2, 4 là đa giác thêm 1 cạnh. Hình thứ 5 thuộc chuỗi mũi tên, nên phương án là đa giác ${s0+2} cạnh là bẫy.`,
+    {seq:[a(0),b(0),a(1),b(1)]});
+}
+
+function genAbs(level){
+  const W={easy:[['series',.75],['odd',.25]],
+    medium:[['series',.45],['matrix',.25],['odd',.15],['overlay',.15]],
+    hard:[['series',.35],['alt',.2],['matrix',.2],['overlay',.15],['odd',.1]]}[level];
+  let r=Math.random(),form='series';
+  for(const [f,w] of W){if(r<w){form=f;break}r-=w}
+  return{series:genSeries,odd:genOdd,matrix:genMatrix,overlay:genOverlay,alt:genAlt}[form](level);
+}
+
 function panelSVG(s){
-  let g='';const fill=s.fill?'currentColor':'none';
+  let g='';const fill=s.fill?'currentColor':'none',dash=s.dash?' stroke-dasharray="7 5"':'';
+  if(s.shape==='lines'){
+    // 8 nét quanh một ô vuông: 4 cạnh, 2 đường chéo, 2 đường giữa
+    const L=[[22,22,78,22],[78,22,78,78],[22,78,78,78],[22,22,22,78],[22,22,78,78],[78,22,22,78],[50,22,50,78],[22,50,78,50]];
+    g+=[[22,22],[78,22],[78,78],[22,78]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="2" fill="currentColor" opacity=".3"/>`).join('');
+    L.forEach((l,i)=>{if(s.mask>>i&1)g+=`<line x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>`});
+    return`<svg viewBox="0 0 100 100" aria-hidden="true">${g}</svg>`;
+  }
+  const k=s.scale??1,sc=k===1?'':` transform="translate(50 47) scale(${k}) translate(-50 -47)"`;
+  g+=`<g${sc}>`;
   if(s.shape==='arrow'){
-    g+=`<g transform="rotate(${s.rot} 50 46)"><path d="M50 22 L67 42 L56 42 L56 70 L44 70 L44 42 L33 42 Z" fill="${fill}" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></g>`;
+    g+=`<g transform="rotate(${s.rot} 50 46)"><path d="M50 22 L67 42 L56 42 L56 70 L44 70 L44 42 L33 42 Z" fill="${fill}" stroke="currentColor" stroke-width="3" stroke-linejoin="round"${dash}/></g>`;
   }else{
     const n=s.sides,pts=[];for(let i=0;i<n;i++){const a=(-90+i*360/n)*Math.PI/180;pts.push((50+23*Math.cos(a)).toFixed(1)+','+(48+23*Math.sin(a)).toFixed(1))}
-    g+=`<polygon points="${pts.join(' ')}" fill="${fill}" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`;
+    g+=`<polygon points="${pts.join(' ')}" fill="${fill}" stroke="currentColor" stroke-width="3" stroke-linejoin="round"${dash}/>`;
   }
+  g+='</g>';
   for(let i=0;i<s.dots;i++)g+=`<circle cx="${50-(s.dots-1)*4.5+i*9}" cy="88" r="2.8" fill="currentColor"/>`;
   if(s.corner>=0){const c=[[6,6],[86,6],[86,86],[6,86]][s.corner];g+=`<rect x="${c[0]}" y="${c[1]}" width="8" height="8" fill="currentColor"/>`}
   return`<svg viewBox="0 0 100 100" aria-hidden="true">${g}</svg>`;
@@ -785,7 +906,7 @@ addEventListener('pagehide',saveRun);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveRun()});
 
 /* Câu sai: lấy lần gặp gần nhất của mỗi câu trong các bài còn chi tiết; ôn đúng rồi thì câu tự rời khỏi danh sách. */
-const qKey=q=>q.type+'|'+(q.type==='abs'?JSON.stringify([q.seq,q.opts]):q.type==='verb'?q.passage+'|'+q.statement:q.q);
+const qKey=q=>q.type+'|'+(q.type==='abs'?JSON.stringify([q.seq,q.grid,q.opts]):q.type==='verb'?q.passage+'|'+q.statement:q.q);
 function wrongPool(atts){
   const last=new Map();
   [...atts].sort((a,b)=>a.t-b.t).forEach(a=>a.sections.forEach(s=>s.qs.forEach((q,i)=>last.set(qKey(q),{key:s.key,q,ok:s.answers[i]===q.ans}))));
@@ -796,11 +917,14 @@ const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(
 
 /* ---------- app ---------- */
 const app=document.getElementById('app');
+// Nút "← Trang chính" trên thanh dính đầu trang của các màn dài
+app.addEventListener('click',e=>{if(e.target.closest('[data-home]'))home()});
 let level='mixed',run=null,tick=null;
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 
 function home(){
   clearInterval(tick);run=null;document.onkeydown=null;
+  window.scrollTo(0,0);
   const hist=loadHistory(),atts=loadAttempts(),detail=new Set(atts.map(a=>a.id)),saved=loadRun(),wrong=wrongPool(atts);
   const total=SECTIONS.reduce((s,d)=>s+d.minutes,0);
   app.innerHTML=`
@@ -911,8 +1035,8 @@ function updTimer(){
 }
 function qHTML(q){
   if(q.type==='abs')return`
-    <p class="qtext">Which figure comes next in the sequence?</p>
-    <div class="seq">${q.seq.map(s=>`<div class="panel">${panelSVG(s)}</div>`).join('')}<div class="panel q">?</div></div>
+    <p class="qtext">${ABS_TEXT[q.form]||'Which figure comes next in the sequence?'}</p>
+    ${absStem(q)}
     <div class="aopts" role="radiogroup" aria-label="Answer options">${q.opts.map((s,i)=>`<button class="aopt" role="radio" aria-checked="false" data-i="${i}" aria-label="Option ${'ABCD'[i]}"><span class="k">${'ABCD'[i]}</span><div class="panel">${panelSVG(s)}</div></button>`).join('')}</div>`;
   let h='';
   if(q.type==='verb')h+=`<div class="passage">${esc(q.passage)}</div><p class="stmt">${esc(q.statement)}</p>`;
@@ -1010,7 +1134,7 @@ function historyView(){
     <header class="hero" id="histRoot"><h1 style="font-size:clamp(2rem,5vw,2.8rem)">Lịch sử luyện tập</h1>
       <p class="lead">Mỗi lần làm được lưu kèm đầy đủ đề và đáp án để xem lại hoặc làm lại.${useIDB?'':' Trình duyệt này không hỗ trợ IndexedDB nên trên máy chỉ giữ chi tiết 15 lần gần nhất.'}</p>
       ${note?`<p class="muted" style="margin-top:8px" role="status">${note}</p>`:''}</header>
-    <div class="controls" style="margin-top:0">
+    <div class="controls" style="margin-top:0"><button class="btn ghost small homelink" data-home>← Trang chính</button>
       <div class="chips" role="group" aria-label="Chọn phần"><button data-sec="all" aria-pressed="${view.sec==='all'}">Tất cả phần</button>${SECTIONS.map(d=>`<button data-sec="${d.key}" aria-pressed="${view.sec===d.key}">${d.name}</button>`).join('')}</div>
       ${names.length>1?`<div class="chips" role="group" aria-label="Người làm"><button data-who="all" aria-pressed="${view.who==='all'}">Mọi người</button>${names.map((n,i)=>`<button data-who="${i}" aria-pressed="${view.who===n}">${n?esc(n):'Chưa có tên'}</button>`).join('')}</div>`:''}
       <div class="chips" role="group" aria-label="Mức độ"><button data-hl="all" aria-pressed="${view.lv==='all'}">Mọi mức độ</button>${Object.entries(LEVELS).map(([k,v])=>`<button data-hl="${k}" aria-pressed="${view.lv===k}">${v}</button>`).join('')}</div>
@@ -1094,7 +1218,7 @@ function showAttempt(att){
     </div>
     <div class="row" style="margin-top:20px">${sc.c<sc.n?`<button class="btn" id="reviewThis">Ôn ${sc.n-sc.c} câu sai của bài này</button>`:''}<button class="btn${sc.c<sc.n?' ghost':''}" id="again">${att.kind==='review'?'Ôn tiếp câu sai':'Làm đề mới cùng cấu trúc'}</button><button class="btn ghost" id="retryBtn">Làm lại đúng đề này</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Lịch sử</button></div>
   </section>
-  <div class="controls">
+  <div class="controls"><button class="btn ghost small homelink" data-home>← Trang chính</button>
     <div class="chips" role="group" aria-label="Chọn phần">${att.sections.length>1?`<button data-sec="all" aria-pressed="true">Tất cả phần</button>`:''}${att.sections.map((s,k)=>`<button data-sec="${s.key}" aria-pressed="${att.sections.length===1}">${secDef(s.key).name}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Lọc câu">${[['all','Tất cả'],['bad','Sai'],['skip','Chưa trả lời'],['ok','Đúng']].map(([k,v])=>`<button data-f="${k}" aria-pressed="${k==='all'}">${v}</button>`).join('')}</div>
   </div>
@@ -1105,7 +1229,7 @@ function showAttempt(att){
     const q=s.qs[i],a=s.answers[i],st=status(s,i),t=s.times[i];
     const resTxt=st==='ok'?'Đúng':st==='bad'?'Sai':(t===null?(att.early?'Chưa làm':'Hết giờ, chưa làm'):'Bỏ qua');
     let body='';
-    if(q.type==='abs')body=`<p style="margin-bottom:8px"><b>Which figure comes next?</b></p><div class="mini"><div class="seq">${q.seq.map(x=>`<div class="panel">${panelSVG(x)}</div>`).join('')}<div class="panel q">?</div></div></div>
+    if(q.type==='abs')body=`<p style="margin-bottom:8px"><b>${ABS_TEXT[q.form]||'Which figure comes next?'}</b></p><div class="mini">${absStem(q)}</div>
       <ul class="ro abs">${q.opts.map((o,j)=>opt(q,a,j,`<div class="panel">${panelSVG(o)}</div>`)).join('')}</ul>`;
     else{
       if(q.type==='verb')body=`<div class="mini"><div class="passage">${esc(q.passage)}</div></div><p style="margin:0"><b>${esc(q.statement)}</b></p>`;
@@ -1245,7 +1369,7 @@ const GUIDE=[
 {key:'abs',name:'Abstract Reasoning',vi:'Suy luận trừu tượng',
  intro:`Bạn thấy một dãy 4 hình và phải chọn hình tiếp theo. Mỗi dãy được tạo từ 1 đến 3 <b>quy luật</b> chạy cùng lúc. Với 50 câu trong 10 phút, bạn chỉ có khoảng <b>12 giây mỗi câu</b>, nên cần một cách kiểm tra cố định thay vì nhìn ngẫu hứng.`,
  steps:[`<b>Nhìn 4 phương án trước.</b> Các phương án khác nhau ở yếu tố nào thì chỉ cần kiểm tra yếu tố đó.`,
-  `Kiểm tra theo thứ tự cố định: <b>số lượng</b> (cạnh, chấm) → <b>xoay</b> → <b>vị trí</b> → <b>màu</b> → <b>kích thước</b>.`,
+  `Kiểm tra theo thứ tự cố định: <b>số lượng</b> (cạnh, chấm) → <b>xoay</b> → <b>vị trí</b> → <b>màu</b> → <b>kích thước</b> → <b>kiểu nét</b> (liền hay đứt).`,
   `Tìm được một quy luật thì <b>loại ngay</b> các phương án sai quy luật đó, rồi mới tìm quy luật tiếp theo.`,
   `Quá 20 giây chưa ra thì chọn phương án còn lại hợp lý nhất và đi tiếp.`],
  types:[
@@ -1265,6 +1389,20 @@ const GUIDE=[
   {t:'Vị trí di chuyển',how:`Một chi tiết nhỏ (ô vuông ở góc) đi vòng quanh khung: từng góc một, hoặc nhảy sang góc đối diện.`,
    abs:{seq:[0,1,2,3].map(c=>ab('poly',{sides:4,corner:c})),opts:[ab('poly',{sides:4,corner:2}),ab('poly',{sides:4,corner:0}),ab('poly',{sides:4,corner:3}),ab('poly',{sides:4,corner:1})],ans:1},
    sol:[`Ô vuông đi theo chiều kim đồng hồ: trên trái → trên phải → dưới phải → dưới trái.`,`Bước tiếp theo về lại trên trái, đáp án <b>B</b>.`]},
+  {t:'Hai chuỗi xen kẽ',how:`Hình ở vị trí lẻ và vị trí chẵn thuộc hai chuỗi khác nhau, mỗi chuỗi có quy luật riêng. Dấu hiệu: các hình "nhảy" qua lại giữa hai kiểu hoàn toàn khác nhau.`,
+   abs:{seq:[ab('arrow',{rot:0}),ab('poly',{sides:3}),ab('arrow',{rot:90}),ab('poly',{sides:4})],opts:[ab('poly',{sides:5}),ab('arrow',{rot:180}),ab('arrow',{rot:90}),ab('arrow',{rot:270})],ans:1},
+   sol:[`Chuỗi 1 (hình 1, 3, 5): mũi tên quay 90° theo chiều kim đồng hồ, lên → phải → xuống.`,`Chuỗi 2 (hình 2, 4): đa giác thêm 1 cạnh.`,`Hình thứ 5 thuộc chuỗi 1, đáp án <b>B</b>.`],
+   trap:`Chọn ngũ giác (A) vì nối tiếp chuỗi đa giác. Hình thứ 5 là vị trí lẻ nên phải thuộc chuỗi mũi tên.`},
+  {t:'Ma trận 3×3',how:`Đọc theo <b>hàng</b> rồi theo <b>cột</b>. Thường mỗi hướng có một quy luật riêng. Ở bài khó, mỗi giá trị xuất hiện đúng một lần trên mỗi hàng và mỗi cột, giống Sudoku.`,
+   abs:{form:'matrix',grid:[0,1,2].flatMap(r=>[0,1,2].map(c=>ab('poly',{sides:3+r,dots:c}))).slice(0,8),opts:[ab('poly',{sides:5,dots:1}),ab('poly',{sides:5,dots:2}),ab('poly',{sides:4,dots:2}),ab('poly',{sides:5,dots:2,fill:true})],ans:1},
+   sol:[`Theo hàng: hàng 1 là tam giác, hàng 2 là hình vuông, hàng 3 là ngũ giác.`,`Theo cột: cột 1 không chấm, cột 2 một chấm, cột 3 hai chấm.`,`Ô còn thiếu là ngũ giác có 2 chấm, đáp án <b>B</b>.`]},
+  {t:'Chồng hình',how:`Hình thứ ba của mỗi hàng là hai hình đầu đặt chồng lên nhau. Có hai kiểu: <b>gộp tất cả nét</b>, hoặc <b>nét trùng thì mất</b> (chỉ giữ nét có ở đúng một hình). Xem hai hàng đầu để biết là kiểu nào.`,
+   abs:{form:'matrix',grid:[9,3,10,144,192,80,33,36].map(m=>ab('lines',{mask:m})),opts:[ab('lines',{mask:5}),ab('lines',{mask:37}),ab('lines',{mask:32}),ab('lines',{mask:13})],ans:0},
+   sol:[`Hàng 1: cạnh trái + cạnh trên, chồng với cạnh trên + cạnh phải. Cạnh trên trùng nên mất, còn cạnh trái và cạnh phải. Đây là kiểu "nét trùng thì mất".`,`Hàng 3: cạnh trên + đường chéo /, chồng với đường chéo / + cạnh dưới. Đường chéo trùng nên mất.`,`Còn lại cạnh trên và cạnh dưới, đáp án <b>A</b>.`],
+   trap:`Phương án B gộp hết các nét, giữ cả đường chéo. Đó là kiểu chồng hình còn lại, không đúng với đề này.`},
+  {t:'Tìm hình khác loại (odd one out)',how:`Không có dãy, chỉ có 4 hình. Ba hình có chung một đặc điểm, hình còn lại thì không. Yếu tố nào được chia đều hai–hai (2 hình đặc, 2 hình rỗng) thường chỉ là yếu tố gây nhiễu.`,
+   abs:{form:'odd',seq:[],opts:[ab('poly',{sides:4,fill:true,dots:1}),ab('poly',{sides:4,dots:2}),ab('poly',{sides:5,fill:true,dots:2}),ab('poly',{sides:4,dots:1})],ans:2},
+   sol:[`Màu: 2 đặc, 2 rỗng. Số chấm: 2 hình 1 chấm, 2 hình 2 chấm. Hai yếu tố này chia đều nên không phải khác biệt.`,`Số cạnh: ba hình vuông và một ngũ giác.`,`Đáp án <b>C</b>.`]},
   {t:'Kết hợp hai quy luật',how:`Câu khó thường ghép 2–3 quy luật đơn giản. Tìm từng quy luật một rồi loại dần.`,
    abs:{seq:[0,1,2,3].map(i=>ab('arrow',{rot:i*90,fill:i%2===0})),opts:[ab('arrow',{rot:0,fill:false}),ab('arrow',{rot:90,fill:true}),ab('arrow',{rot:0,fill:true}),ab('arrow',{rot:270,fill:true})],ans:2},
    sol:[`Quy luật 1: xoay 90° mỗi bước, nên tiếp theo mũi tên chỉ lên. Loại B và D.`,`Quy luật 2: xen kẽ đặc và rỗng (đặc, rỗng, đặc, rỗng), nên tiếp theo là đặc. Loại A.`,`Đáp án <b>C</b>.`],
@@ -1329,7 +1467,7 @@ const GUIDE_SRC=[
 ];
 function guideView(focus){
   clearInterval(tick);document.onkeydown=null;run=null;
-  const absEx=x=>`<div class="mini"><div class="seq">${x.seq.map(s=>`<div class="panel">${panelSVG(s)}</div>`).join('')}<div class="panel q">?</div></div></div>
+  const absEx=x=>`<p><b>${ABS_TEXT[x.form]||'Which figure comes next?'}</b></p><div class="mini">${absStem(x)}</div>
     <ul class="ro abs">${x.opts.map((o,j)=>`<li${j===x.ans?' class="is-ans"':''}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${j===x.ans?'<em>Đáp án đúng</em>':''}</li>`).join('')}</ul>`;
   const typeHTML=(t,i,g)=>`<article class="gtype" id="g-${g.key}-${i}">
     <h4><span class="gnum">${i+1}</span>${t.t}</h4>
@@ -1343,7 +1481,7 @@ function guideView(focus){
     <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Mẹo làm bài</h1>
     <p class="lead">Cách nhận ra từng dạng câu hỏi và cách giải nhanh, mỗi dạng có một ví dụ cụ thể. Đề ví dụ bằng tiếng Anh giống đề thật.</p>
   </header>
-  <div class="controls" style="margin-top:6px"><div class="chips" role="group" aria-label="Chuyển tới phần">${GUIDE.map(g=>`<button data-gto="${g.key}">${g.name}</button>`).join('')}</div></div>
+  <div class="controls" style="margin-top:6px"><button class="btn ghost small homelink" data-home>← Trang chính</button><div class="chips" role="group" aria-label="Chuyển tới phần">${GUIDE.map(g=>`<button data-gto="${g.key}">${g.name}</button>`).join('')}</div></div>
   ${GUIDE.map(g=>`<section class="gsec" id="g-${g.key}">
     <h2>${g.name}</h2><p class="muted" style="margin-top:2px">${g.vi}</p>
     <p class="gintro">${g.intro}</p>
@@ -1370,7 +1508,7 @@ function studyView(lv,secKey){
     <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Xem đề và đáp án</h1>
     <p class="lead">Đọc nhanh đề, đáp án đúng và giải thích, không tính giờ và không chấm điểm. Bấm "Đề khác" để xem bộ câu mới.</p>
   </header>
-  <div class="controls" style="margin-top:6px">
+  <div class="controls" style="margin-top:6px"><button class="btn ghost small homelink" data-home>← Trang chính</button>
     <div class="chips" role="group" aria-label="Chọn phần">${SECTIONS.map(s=>`<button data-sec="${s.key}" aria-pressed="${s.key===secKey}">${s.name}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Mức độ">${Object.entries(LEVELS).map(([k,v])=>`<button data-lv="${k}" aria-pressed="${k===lv}">${v}</button>`).join('')}</div>
   </div>
@@ -1378,7 +1516,7 @@ function studyView(lv,secKey){
   <div id="list">${qs.map((q,i)=>{
     const ans=j=>j===q.ans?' class="is-ans"':'',em=j=>j===q.ans?'<em>Đáp án đúng</em>':'';
     let body;
-    if(q.type==='abs')body=`<div class="mini"><div class="seq">${q.seq.map(x=>`<div class="panel">${panelSVG(x)}</div>`).join('')}<div class="panel q">?</div></div></div><ul class="ro abs">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${em(j)}</li>`).join('')}</ul>`;
+    if(q.type==='abs')body=`<p style="margin:0 0 8px"><b>${ABS_TEXT[q.form]||'Which figure comes next?'}</b></p><div class="mini">${absStem(q)}</div><ul class="ro abs">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${em(j)}</li>`).join('')}</ul>`;
     else{
       body=q.type==='verb'?`<div class="mini"><div class="passage">${esc(q.passage)}</div></div><p style="margin:0"><b>${esc(q.statement)}</b></p>`:`<p style="margin:0"><b>${esc(q.q)}</b></p>`+(q.table?`<div class="tablewrap" style="margin-top:10px"><table class="data"><thead><tr>${q.table.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${q.table.rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'');
       body+=`<ul class="ro">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><span>${esc(o)}</span>${em(j)}</li>`).join('')}</ul>`;
