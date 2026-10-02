@@ -12,6 +12,7 @@ Tính năng:
 - Lịch sử: tối đa 500 lần làm, mỗi lần lưu đủ đề, đáp án đã chọn và thời gian từng câu để xem lại hoặc làm lại đúng đề đó. Có biểu đồ tiến bộ theo từng phần, lọc theo phần/người làm/mức độ, xóa, xuất/nhập file JSON.
 - Mẹo làm bài: trang hướng dẫn từng dạng đề của cả 4 phần (8 dạng Numerical, 7 dạng Verbal, 10 dạng Abstract, 9 dạng Critical Thinking), mỗi dạng có ví dụ, lời giải từng bước và bẫy hay gặp.
 - Bộ đề: Numerical sinh số liệu ngẫu nhiên từ 30 dạng câu; Verbal có 27 đoạn văn (100 statement); Abstract sinh ngẫu nhiên 5 dạng: dãy hình (7 thuộc tính: xoay, số cạnh, tô màu, số chấm, vị trí, kích thước, nét đứt), hai chuỗi xen kẽ, ma trận 3×3, chồng hình, tìm hình khác loại; Critical Thinking có 42 câu cố định cùng các dạng sinh ngẫu nhiên.
+- Xem đề và đáp án theo dạng: Verbal và Critical Thinking hiện toàn bộ ngân hàng câu cố định kèm đáp án; Numerical và Abstract hiện 3 ví dụ mỗi dạng, bấm "Ví dụ khác" để sinh thêm.
 - Ôn câu sai: gom các câu làm sai hoặc chưa làm thành một đề riêng; ôn đúng câu nào thì câu đó rời khỏi danh sách.
 
 Lưu trữ:

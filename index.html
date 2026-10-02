@@ -135,10 +135,10 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .stat b{display:block; font-family:var(--display); font-size:1.4rem; color:var(--ink); font-variant-numeric:tabular-nums}
 .stat span{font-size:.9rem; color:var(--muted)}
 .controls{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--paper); padding:12px 0 10px; border-bottom:1px solid var(--line); margin-top:26px}
-.controls{display:grid; grid-template-columns:auto minmax(0,1fr); column-gap:12px; align-items:start}
-.controls > .chips{grid-column:2}
-.controls > .homelink{grid-column:1; grid-row:1 / span 3; white-space:nowrap}
-@media (max-width:560px){.controls > .homelink{padding:6px 10px}}
+.fab{position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:max(16px, env(safe-area-inset-bottom)); z-index:20; border:2px solid var(--ink); background:var(--ink); color:var(--card); border-radius:999px; padding:12px 20px; font-weight:700; font-size:1rem; box-shadow:0 6px 20px rgba(0,0,0,.22)}
+.fab:hover{filter:brightness(1.08)}
+.fab:focus-visible{outline:3px solid var(--mark); outline-offset:2px}
+body.has-fab .wrap{padding-bottom:96px}
 .chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px}
 .chips button{flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); border-radius:999px; padding:5px 12px; font-size:.92rem; font-weight:600}
 .chips button[aria-pressed="true"]{border-color:var(--ink); background:var(--ink); color:var(--card)}
@@ -189,6 +189,9 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .sheet.resume{border:2px solid var(--ink); margin-bottom:18px}
 .sheet.resume h3{margin-bottom:4px}
 a{color:var(--ink); text-underline-offset:2px}
+.vlist{margin:12px 0 0; padding-left:1.3em} .vlist li{margin:10px 0} .vlist p{margin:0} .vlist .muted{margin-top:3px; font-size:.95rem}
+.vans{display:inline-block; font-size:.82rem; font-weight:700; border-radius:6px; padding:1px 8px; margin-left:4px; white-space:nowrap}
+.vans.v-t{background:var(--ok-bg); color:var(--ok)} .vans.v-f{background:var(--bad-bg); color:var(--bad)} .vans.v-c{background:var(--grid); color:var(--ink)}
 .gsec{margin-top:34px; scroll-margin-top:70px}
 .gsec h2{font-size:1.7rem}
 .gintro{max-width:68ch; margin:12px 0 16px}
@@ -219,6 +222,7 @@ a{color:var(--ink); text-underline-offset:2px}
 </head>
 <body>
 <main class="wrap" id="app" aria-live="polite"></main>
+<button class="fab" id="fabHome" data-home hidden>⌂ Trang chính</button>
 
 <script>
 /* ---------- helpers ---------- */
@@ -290,9 +294,9 @@ hard:[
 ]};
 
 /* ---------- abstract ---------- */
-function genSeries(level){
+function genSeries(level,force){
   const nr={easy:1,medium:2,hard:3}[level];let rules;
-  do{rules=shuffle(['rot','sides','fill','dots','corner','size','dash']).slice(0,nr)}while(rules.includes('rot')&&rules.includes('sides')||rules.includes('dash')&&rules.includes('fill'));
+  do{rules=force||shuffle(['rot','sides','fill','dots','corner','size','dash']).slice(0,nr)}while(rules.includes('rot')&&rules.includes('sides')||rules.includes('dash')&&rules.includes('fill'));
   const P={};
   if(rules.includes('rot'))P.rot={start:pick([0,45,90,135,180,225,270,315]),step:pick(level==='easy'?[90]:level==='medium'?[45,90]:[45,135])*pick([1,-1])};
   if(rules.includes('sides'))P.sides=level==='hard'&&Math.random()<.5?{start:7,step:-1}:{start:3,step:1};
@@ -358,8 +362,8 @@ function absStem(q){
   return`<div class="seq">${q.seq.map(p).join('')}<div class="panel q">?</div></div>`;
 }
 
-function genOdd(level){
-  const v=level==='easy'?'sides':level==='medium'?pick(['sides','dotsides']):pick(['dotsides','point']);
+function genOdd(level,force){
+  const v=force||(level==='easy'?'sides':level==='medium'?pick(['sides','dotsides']):pick(['dotsides','point']));
   const fills=shuffle([true,true,false,false]);
   let figs,exp;
   if(v==='sides'){
@@ -568,8 +572,8 @@ const NAMES=['An','Bình','Chi','Dũng','Hà','Khoa','Linh','Minh','Nga','Phúc'
 const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 const CATS=[['analysts','certified staff','people who can access the dashboard'],['interns','students','people eligible for the discount'],['drivers','contract workers','people who receive the fuel allowance'],['designers','creative staff','people who use Figma'],['managers','senior staff','people who attend the board meeting'],['engineers','remote workers','people who join the Friday call']];
 const CONDS=[['the server is overloaded','the alert is triggered','the server is not overloaded','the alert is not triggered'],['it rains','the outdoor event is cancelled','it does not rain','the outdoor event is not cancelled'],['the budget is approved','the project starts in May','the budget is not approved','the project does not start in May'],['the printer is out of paper','the warning light is on','the printer is not out of paper','the warning light is not on'],['a director signs the form','the payment is released','no director signs the form','the payment is not released']];
-function genCrit(lv){
-  const k=pick({easy:['order','allA','mp'],medium:['order','someAll','mt'],hard:['order','noSome','ac','da']}[lv]);
+function genCrit(lv,force){
+  const k=force||pick({easy:['order','allA','mp'],medium:['order','someAll','mt'],hard:['order','noSome','ac','da']}[lv]);
   let q,o,e;
   if(k==='order'){
     const n={easy:3,medium:4,hard:5}[lv],pp=shuffle(NAMES).slice(0,n);
@@ -918,7 +922,10 @@ const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(
 /* ---------- app ---------- */
 const app=document.getElementById('app');
 // Nút "← Trang chính" trên thanh dính đầu trang của các màn dài
-app.addEventListener('click',e=>{if(e.target.closest('[data-home]'))home()});
+document.addEventListener('click',e=>{if(e.target.closest('[data-home]'))home()});
+// Nút nổi ở góc: ẩn ở trang chính và trong lúc làm bài (đã có nút Tạm dừng)
+const fab=document.getElementById('fabHome');
+new MutationObserver(()=>{const show=!run&&!document.getElementById('startFull');fab.hidden=!show;document.body.classList.toggle('has-fab',show)}).observe(app,{childList:true});
 let level='mixed',run=null,tick=null;
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 
@@ -1134,7 +1141,7 @@ function historyView(){
     <header class="hero" id="histRoot"><h1 style="font-size:clamp(2rem,5vw,2.8rem)">Lịch sử luyện tập</h1>
       <p class="lead">Mỗi lần làm được lưu kèm đầy đủ đề và đáp án để xem lại hoặc làm lại.${useIDB?'':' Trình duyệt này không hỗ trợ IndexedDB nên trên máy chỉ giữ chi tiết 15 lần gần nhất.'}</p>
       ${note?`<p class="muted" style="margin-top:8px" role="status">${note}</p>`:''}</header>
-    <div class="controls" style="margin-top:0"><button class="btn ghost small homelink" data-home>← Trang chính</button>
+    <div class="controls" style="margin-top:0">
       <div class="chips" role="group" aria-label="Chọn phần"><button data-sec="all" aria-pressed="${view.sec==='all'}">Tất cả phần</button>${SECTIONS.map(d=>`<button data-sec="${d.key}" aria-pressed="${view.sec===d.key}">${d.name}</button>`).join('')}</div>
       ${names.length>1?`<div class="chips" role="group" aria-label="Người làm"><button data-who="all" aria-pressed="${view.who==='all'}">Mọi người</button>${names.map((n,i)=>`<button data-who="${i}" aria-pressed="${view.who===n}">${n?esc(n):'Chưa có tên'}</button>`).join('')}</div>`:''}
       <div class="chips" role="group" aria-label="Mức độ"><button data-hl="all" aria-pressed="${view.lv==='all'}">Mọi mức độ</button>${Object.entries(LEVELS).map(([k,v])=>`<button data-hl="${k}" aria-pressed="${view.lv===k}">${v}</button>`).join('')}</div>
@@ -1218,7 +1225,7 @@ function showAttempt(att){
     </div>
     <div class="row" style="margin-top:20px">${sc.c<sc.n?`<button class="btn" id="reviewThis">Ôn ${sc.n-sc.c} câu sai của bài này</button>`:''}<button class="btn${sc.c<sc.n?' ghost':''}" id="again">${att.kind==='review'?'Ôn tiếp câu sai':'Làm đề mới cùng cấu trúc'}</button><button class="btn ghost" id="retryBtn">Làm lại đúng đề này</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Lịch sử</button></div>
   </section>
-  <div class="controls"><button class="btn ghost small homelink" data-home>← Trang chính</button>
+  <div class="controls">
     <div class="chips" role="group" aria-label="Chọn phần">${att.sections.length>1?`<button data-sec="all" aria-pressed="true">Tất cả phần</button>`:''}${att.sections.map((s,k)=>`<button data-sec="${s.key}" aria-pressed="${att.sections.length===1}">${secDef(s.key).name}</button>`).join('')}</div>
     <div class="chips" role="group" aria-label="Lọc câu">${[['all','Tất cả'],['bad','Sai'],['skip','Chưa trả lời'],['ok','Đúng']].map(([k,v])=>`<button data-f="${k}" aria-pressed="${k==='all'}">${v}</button>`).join('')}</div>
   </div>
@@ -1481,7 +1488,7 @@ function guideView(focus){
     <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Mẹo làm bài</h1>
     <p class="lead">Cách nhận ra từng dạng câu hỏi và cách giải nhanh, mỗi dạng có một ví dụ cụ thể. Đề ví dụ bằng tiếng Anh giống đề thật.</p>
   </header>
-  <div class="controls" style="margin-top:6px"><button class="btn ghost small homelink" data-home>← Trang chính</button><div class="chips" role="group" aria-label="Chuyển tới phần">${GUIDE.map(g=>`<button data-gto="${g.key}">${g.name}</button>`).join('')}</div></div>
+  <div class="controls" style="margin-top:6px"><div class="chips" role="group" aria-label="Chuyển tới phần">${GUIDE.map(g=>`<button data-gto="${g.key}">${g.name}</button>`).join('')}</div></div>
   ${GUIDE.map(g=>`<section class="gsec" id="g-${g.key}">
     <h2>${g.name}</h2><p class="muted" style="margin-top:2px">${g.vi}</p>
     <p class="gintro">${g.intro}</p>
@@ -1500,37 +1507,100 @@ function guideView(focus){
   document.getElementById('homeBtn').onclick=home;
   if(focus)requestAnimationFrame(()=>go('g-'+focus));else window.scrollTo(0,0);
 }
-function studyView(lv,secKey){
-  clearInterval(tick);document.onkeydown=null;run=null;level=lv;
-  const d=secDef(secKey),qs=build(d,lv);
-  app.innerHTML=`
-  <header class="hero" style="padding-bottom:10px">
-    <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Xem đề và đáp án</h1>
-    <p class="lead">Đọc nhanh đề, đáp án đúng và giải thích, không tính giờ và không chấm điểm. Bấm "Đề khác" để xem bộ câu mới.</p>
-  </header>
-  <div class="controls" style="margin-top:6px"><button class="btn ghost small homelink" data-home>← Trang chính</button>
-    <div class="chips" role="group" aria-label="Chọn phần">${SECTIONS.map(s=>`<button data-sec="${s.key}" aria-pressed="${s.key===secKey}">${s.name}</button>`).join('')}</div>
-    <div class="chips" role="group" aria-label="Mức độ">${Object.entries(LEVELS).map(([k,v])=>`<button data-lv="${k}" aria-pressed="${k===lv}">${v}</button>`).join('')}</div>
-  </div>
-  <p class="muted" style="margin:14px 0 0">${d.name}: ${d.count} câu, ${d.minutes} phút khi thi thật. ${TIPS[secKey]}</p>
-  <div id="list">${qs.map((q,i)=>{
-    const ans=j=>j===q.ans?' class="is-ans"':'',em=j=>j===q.ans?'<em>Đáp án đúng</em>':'';
-    let body;
-    if(q.type==='abs')body=`<p style="margin:0 0 8px"><b>${ABS_TEXT[q.form]||'Which figure comes next?'}</b></p><div class="mini">${absStem(q)}</div><ul class="ro abs">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${em(j)}</li>`).join('')}</ul>`;
-    else{
-      body=q.type==='verb'?`<div class="mini"><div class="passage">${esc(q.passage)}</div></div><p style="margin:0"><b>${esc(q.statement)}</b></p>`:`<p style="margin:0"><b>${esc(q.q)}</b></p>`+(q.table?`<div class="tablewrap" style="margin-top:10px"><table class="data"><thead><tr>${q.table.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${q.table.rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'');
-      body+=`<ul class="ro">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><span>${esc(o)}</span>${em(j)}</li>`).join('')}</ul>`;
-    }
-    return`<article class="qcard st-ok"><div class="qhead"><span>Câu ${i+1} · ${LEVELS[q.level]}</span><span class="res ok">Đáp án: ${'ABCD'[q.ans]}</span></div>${body}<div class="why"><p><b>Giải thích:</b> ${esc(q.exp)}</p></div></article>`;
-  }).join('')}</div>
-  <div class="row section-gap"><button class="btn" id="more">Đề khác</button><button class="btn ghost" id="try">Làm thử phần này</button><button class="btn ghost" id="homeBtn">Về trang chính</button></div>`;
-  app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>studyView(lv,b.dataset.sec));
-  app.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>studyView(b.dataset.lv,secKey));
-  document.getElementById('more').onclick=()=>studyView(lv,secKey);
-  document.getElementById('try').onclick=()=>start([{def:d,qs:build(d,lv),secs:d.minutes*60}],'Luyện '+d.name);
-  document.getElementById('homeBtn').onclick=home;
-  window.scrollTo(0,0);
+/* ---------- xem đề và đáp án theo dạng ---------- */
+// Tên dạng của các hàm sinh câu Numerical, theo đúng thứ tự trong NUM sau khi đã ghép NUM_NEW.
+const NUM_NAMES={
+  easy:['Phần trăm của một số','Dãy số cộng','Tỷ lệ thuận theo đơn giá','Giảm giá theo phần trăm','Phần trăm của tổng','Trung bình đọc từ bảng','Lãi đơn'],
+  medium:['Phần trăm tăng trưởng','Chia theo tỷ lệ','Dãy số có khoảng cách tăng dần','Dãy số nhân','Đọc bảng: tăng trưởng lớn nhất','Vận tốc trung bình','Trung bình có trọng số','Tính ngược giá trước thuế','Tỷ giá chéo','Giá trị thiếu khi biết tổng','Biên lợi nhuận và markup','Điểm hòa vốn'],
+  hard:['Đọc bảng: doanh thu từ thị phần','Tăng rồi giảm liên tiếp','Đổi tiền có phí','Hai dãy số xen kẽ','Trung bình thay đổi khi thêm người','Hai máy làm chung','Tăng trưởng kép','Tìm giá trị ban đầu sau hai lần đổi %','Tỷ lệ thay đổi khi bổ sung nhóm','Điểm phần trăm và phần trăm','Chi phí trên mỗi đơn vị']};
+// Kỹ năng của các câu Critical Thinking có sẵn từ đầu (chưa có nhãn [..] trong đề), theo thứ tự trong CRIT.
+const CRIT_OLD_TAGS={
+  easy:['Deduction','Deduction','Recognition of assumptions','Deduction','Evaluation of arguments','Ordering'],
+  medium:['Deduction','Recognition of assumptions','Evaluation of arguments','Ordering','Deduction','Interpretation'],
+  hard:['Deduction','Deduction','Recognition of assumptions','Evaluation of arguments','Deduction','Evaluation of arguments']};
+const CRIT_TAG_VI={'Deduction':'Suy diễn','Recognition of assumptions':'Nhận ra giả định','Inference':'Suy luận','Interpretation':'Diễn giải','Evaluation of arguments':'Đánh giá lập luận','Ordering':'Xếp thứ tự'};
+const LVS=['easy','medium','hard'];
+
+function bankGroups(key){
+  if(key==='num')return LVS.flatMap(lv=>NUM[lv].map((f,i)=>({name:NUM_NAMES[lv][i]||`Dạng ${i+1}`,lv,gen:()=>({...f(),type:'num',level:lv})})));
+  if(key==='abs'){
+    const S=(name,lv,rules)=>({name,lv,gen:()=>({...genSeries(lv,rules),type:'abs',level:lv})});
+    const G=(name,lv,fn)=>({name,lv,gen:()=>({...fn(),type:'abs',level:lv})});
+    return[S('Dãy hình: xoay','easy',['rot']),S('Dãy hình: số cạnh','easy',['sides']),S('Dãy hình: tô màu','easy',['fill']),S('Dãy hình: số chấm','easy',['dots']),
+      S('Dãy hình: vị trí ô vuông nhỏ','easy',['corner']),S('Dãy hình: kích thước','easy',['size']),S('Dãy hình: nét liền và nét đứt','easy',['dash']),
+      G('Tìm hình khác loại: số cạnh','easy',()=>genOdd('easy','sides')),
+      S('Dãy hình: kết hợp 2 quy luật','medium',null),G('Ma trận 3×3: quy luật hàng và cột','medium',()=>genMatrix('medium')),
+      G('Chồng hình: gộp tất cả nét','medium',()=>genOverlay('medium')),G('Tìm hình khác loại: số chấm theo số cạnh','medium',()=>genOdd('medium','dotsides')),
+      S('Dãy hình: kết hợp 3 quy luật','hard',null),G('Hai chuỗi xen kẽ','hard',()=>genAlt()),G('Ma trận 3×3 kiểu Raven','hard',()=>genMatrix('hard')),
+      G('Chồng hình: nét trùng thì mất','hard',()=>genOverlay('hard')),G('Tìm hình khác loại: hướng mũi tên','hard',()=>genOdd('hard','point'))];
+  }
+  if(key==='verb')return LVS.map(lv=>({name:`Đoạn văn mức ${LEVELS[lv].toLowerCase()}`,lv,passages:VERB[lv]}));
+  // crit: câu cố định gộp theo kỹ năng, rồi tới các dạng sinh ngẫu nhiên
+  const by={};
+  LVS.forEach(lv=>CRIT[lv].forEach((c,i)=>{const m=c.q.match(/^\[(.+?)\]/),tag=m?m[1]:CRIT_OLD_TAGS[lv][i]||'Deduction';
+    (by[tag]=by[tag]||[]).push({type:'crit',q:c.q,opts:c.o,ans:c.a,exp:c.e,level:lv})}));
+  const fixed=Object.keys(CRIT_TAG_VI).filter(t=>by[t]).map(t=>({name:CRIT_TAG_VI[t]+(t==='Ordering'?'':` (${t})`),items:by[t]}));
+  const C=(name,lv,k)=>({name,lv,gen:()=>genCrit(lv,k)});
+  return[...fixed,C('Xếp thứ tự 3 người','easy','order'),C('Xếp thứ tự 4 người','medium','order'),C('Xếp thứ tự 5 người','hard','order'),
+    C('Tam đoạn luận: All … are …','easy','allA'),C('Tam đoạn luận: Some … All …','medium','someAll'),C('Tam đoạn luận: No … Some …','hard','noSome'),
+    C('Nếu… thì…: điều kiện xảy ra','easy','mp'),C('Nếu… thì…: kết quả không xảy ra','medium','mt'),
+    C('Nếu… thì…: lỗi khẳng định hệ quả','hard','ac'),C('Nếu… thì…: lỗi phủ định tiền đề','hard','da')];
 }
+function ansCard(q,head){
+  const ans=j=>j===q.ans?' class="is-ans"':'',em=j=>j===q.ans?'<em>Đáp án đúng</em>':'';
+  let body;
+  if(q.type==='abs')body=`<p style="margin:0 0 8px"><b>${ABS_TEXT[q.form]||'Which figure comes next?'}</b></p><div class="mini">${absStem(q)}</div><ul class="ro abs">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${em(j)}</li>`).join('')}</ul>`;
+  else body=`<p style="margin:0"><b>${esc(q.q)}</b></p>`+(q.table?`<div class="tablewrap" style="margin-top:10px"><table class="data"><thead><tr>${q.table.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${q.table.rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'')
+    +`<ul class="ro">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><span>${esc(o)}</span>${em(j)}</li>`).join('')}</ul>`;
+  return`<article class="qcard st-ok"><div class="qhead"><span>${head}</span><span class="res ok">Đáp án: ${'ABCD'[q.ans]}</span></div>${body}<div class="why"><p><b>Giải thích:</b> ${esc(q.exp)}</p></div></article>`;
+}
+function passageCard(p,lv,i){
+  const cls={True:'t',False:'f','Cannot say':'c'};
+  return`<article class="qcard st-ok"><div class="qhead"><span>Đoạn ${i+1} · ${LEVELS[lv]}</span><span class="res ok">${p.s.length} câu</span></div>
+    <div class="mini"><div class="passage">${esc(p.p)}</div></div>
+    <ol class="vlist">${p.s.map(([st,a,e])=>`<li><p><b>${esc(st)}</b> <span class="vans v-${cls[a]}">${a}</span></p><p class="muted">${esc(e)}</p></li>`).join('')}</ol></article>`;
+}
+function studyView(lv,secKey){
+  clearInterval(tick);document.onkeydown=null;run=null;
+  if(lv!=='mixed')level=lv;
+  const view={lv:LVS.includes(lv)?lv:'all'},d=secDef(secKey),N=3;
+  const groups=bankGroups(secKey),examples=new Map();
+  const items=g=>g.items?g.items.filter(q=>view.lv==='all'||q.level===view.lv):null;
+  const visible=g=>g.items?items(g).length>0:view.lv==='all'||g.lv===view.lv;
+  const count=g=>g.passages?`${g.passages.length} đoạn văn · ${g.passages.reduce((a,p)=>a+p.s.length,0)} câu`:g.items?`${items(g).length} câu`:`${LEVELS[g.lv]} · sinh ngẫu nhiên`;
+  const body=(g,k)=>{
+    if(g.passages)return g.passages.map((p,i)=>passageCard(p,g.lv,i)).join('');
+    if(g.items)return items(g).map((q,i)=>ansCard(q,`Câu ${i+1} · ${LEVELS[q.level]}`)).join('');
+    if(!examples.has(k))examples.set(k,Array.from({length:N},g.gen));
+    return examples.get(k).map((q,i)=>ansCard(q,`Ví dụ ${i+1} · ${LEVELS[g.lv]}`)).join('')+`<button class="btn ghost small" data-more="${k}">Ví dụ khác</button>`;
+  };
+  const draw=()=>{
+    const vis=groups.map((g,k)=>({g,k})).filter(x=>visible(x.g));
+    const fixedN=vis.reduce((a,{g})=>a+(g.passages?g.passages.reduce((s,p)=>s+p.s.length,0):g.items?items(g).length:0),0);
+    app.innerHTML=`
+    <header class="hero" style="padding-bottom:10px">
+      <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Xem đề và đáp án</h1>
+      <p class="lead">Câu hỏi kèm đáp án và giải thích, xếp theo từng dạng. ${secKey==='num'||secKey==='abs'?'Phần này sinh số liệu và hình ngẫu nhiên nên mỗi dạng hiện 3 ví dụ; bấm "Ví dụ khác" để xem thêm.':secKey==='verb'?'Đây là toàn bộ đoạn văn trong ngân hàng đề.':'Gồm toàn bộ câu cố định, xếp theo kỹ năng, và các dạng sinh ngẫu nhiên.'}</p>
+    </header>
+    <div class="controls" style="margin-top:6px">
+      <div class="chips" role="group" aria-label="Chọn phần">${SECTIONS.map(s=>`<button data-sec="${s.key}" aria-pressed="${s.key===secKey}">${s.name}</button>`).join('')}</div>
+      <div class="chips" role="group" aria-label="Mức độ"><button data-blv="all" aria-pressed="${view.lv==='all'}">Mọi mức độ</button>${LVS.map(k=>`<button data-blv="${k}" aria-pressed="${view.lv===k}">${LEVELS[k]}</button>`).join('')}</div>
+    </div>
+    <p class="muted" style="margin:14px 0 0">${d.name}: ${vis.length} dạng${fixedN?`, ${fixedN} câu cố định`:''}. ${TIPS[secKey]}</p>
+    <ul class="gtoc" style="margin-top:12px">${vis.map(({g,k})=>`<li><a href="#b-${k}" data-bjump="b-${k}">${g.name}</a> <span class="muted" style="font-size:.88rem">(${count(g)})</span></li>`).join('')}</ul>
+    ${vis.map(({g,k})=>`<section class="gsec" id="b-${k}"><h2 style="font-size:1.35rem">${g.name}</h2><p class="muted" style="margin-top:2px">${count(g)}</p><div id="bb-${k}">${body(g,k)}</div></section>`).join('')}
+    <div class="row section-gap"><button class="btn" id="try">Luyện riêng ${d.name}</button><button class="btn ghost" data-home>Về trang chính</button></div>`;
+    app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>studyView(view.lv==='all'?'mixed':view.lv,b.dataset.sec));
+    app.querySelectorAll('[data-blv]').forEach(b=>b.onclick=()=>{view.lv=b.dataset.blv;draw()});
+    app.querySelectorAll('[data-bjump]').forEach(a=>a.onclick=e=>{e.preventDefault();document.getElementById(a.dataset.bjump).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
+    bindMore();
+    document.getElementById('try').onclick=()=>start([{def:d,qs:build(d,view.lv==='all'?'mixed':view.lv),secs:d.minutes*60}],'Luyện '+d.name);
+  };
+  const bindMore=()=>app.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>{const k=+b.dataset.more;examples.delete(k);
+    document.getElementById('bb-'+k).innerHTML=body(groups[k],k);bindMore()});
+  draw();window.scrollTo(0,0);
+}
+
 initAttempts().finally(()=>{backfillUploads();home();syncPending()});
 addEventListener('online',()=>syncPending());
 </script>
