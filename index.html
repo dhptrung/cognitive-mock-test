@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thi thử Cognitive Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F7FB; --grid:#E2EAF3; --card:#FFFFFF; --line:#C8D4E2;
+  --ink:#1D3F8F; --ink-soft:#4C67AE; --text:#232830; --muted:#5B6574;
+  --mark:#FFE36E; --mark-text:#232830; --ok:#1F7A4A; --bad:#BF3530; --ok-bg:#E3F3EA; --bad-bg:#FBE6E4;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#11171F; --grid:#1A222D; --card:#18202A; --line:#2C3847;
+    --ink:#91B1FF; --ink-soft:#6F8FD9; --text:#E5E9EF; --muted:#9AA5B4;
+    --mark:#E9C84A; --mark-text:#17140A; --ok:#53C98E; --bad:#F27A70; --ok-bg:#16301F; --bad-bg:#3A1C1A;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11171F; --grid:#1A222D; --card:#18202A; --line:#2C3847;
+  --ink:#91B1FF; --ink-soft:#6F8FD9; --text:#E5E9EF; --muted:#9AA5B4;
+  --mark:#E9C84A; --mark-text:#17140A; --ok:#53C98E; --bad:#F27A70; --ok-bg:#16301F; --bad-bg:#3A1C1A;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{min-height:100%}
+body{
+  margin:0; color:var(--text); font-family:var(--body); font-size:17px; line-height:1.55;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+.wrap{max-width:860px; margin:0 auto; padding:28px 20px 64px}
+h1,h2,h3{font-family:var(--display); color:var(--ink); margin:0; line-height:1.1}
+h1{font-size:clamp(2.2rem,6vw,3.6rem); font-weight:800; letter-spacing:-0.02em}
+h2{font-size:1.6rem; font-weight:700}
+h3{font-size:1.15rem; font-weight:700}
+p{margin:0 0 .8em}
+.lead{font-size:1.15rem; color:var(--muted); max-width:60ch; margin-top:14px}
+button{font:inherit; cursor:pointer}
+:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+.btn{border:2px solid var(--ink); background:var(--ink); color:var(--card); padding:12px 22px; border-radius:10px; font-weight:700; font-size:1rem}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.35; cursor:not-allowed}
+.btn.ghost{background:transparent; color:var(--ink)}
+.btn.small{padding:7px 14px; font-size:.92rem}
+.sheet{background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:24px}
+.muted{color:var(--muted)}
+
+/* Home */
+.hero{padding:24px 0 30px}
+.levels{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 0}
+.levels button{border:2px solid var(--line); background:var(--card); color:var(--text); border-radius:999px; padding:8px 16px; font-weight:600}
+.levels button[aria-pressed="true"]{border-color:var(--ink); background:var(--mark); color:var(--mark-text)}
+.structure{width:100%; border-collapse:collapse; margin:6px 0 20px}
+.structure td{padding:12px 6px; border-bottom:1px solid var(--line); vertical-align:middle}
+.structure tr:last-child td{border-bottom:0}
+.structure .n{font-family:var(--display); font-weight:800; color:var(--ink-soft); width:34px; font-size:1.2rem}
+.structure .name{font-weight:700}
+.structure .vi{display:block; color:var(--muted); font-size:.92rem; font-weight:400}
+.structure .meta{color:var(--muted); white-space:nowrap; text-align:right; font-variant-numeric:tabular-nums}
+.structure .act{text-align:right; width:1%}
+.row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+.section-gap{margin-top:28px}
+.notes{margin:0; padding-left:1.1em; color:var(--muted)}
+.notes li{margin:4px 0}
+.hist{width:100%; border-collapse:collapse; font-size:.95rem; font-variant-numeric:tabular-nums}
+.hist td{padding:6px 4px; border-bottom:1px dashed var(--line)}
+
+/* Test screen */
+.bar{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; padding-bottom:12px; border-bottom:2px solid var(--ink)}
+.bar .sec{font-family:var(--display); font-weight:700; color:var(--ink); font-size:1.15rem}
+.bar .count{color:var(--muted); font-variant-numeric:tabular-nums}
+.timer{font-family:var(--display); font-weight:800; font-size:clamp(2.4rem,8vw,3.6rem); line-height:.9; color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-0.02em}
+.timer.low{color:var(--bad)}
+.progress{height:4px; background:var(--line); margin-top:-2px}
+.progress i{display:block; height:100%; background:var(--ink-soft); transition:width .3s}
+.qbody{padding:26px 0 10px}
+.tag{display:inline-block; font-size:.85rem; color:var(--muted); border:1px solid var(--line); border-radius:6px; padding:1px 8px; margin-bottom:12px}
+.qtext{font-size:1.2rem; font-weight:600; margin-bottom:18px; max-width:68ch}
+.passage{background:var(--card); border-left:4px solid var(--ink); padding:16px 18px; border-radius:0 10px 10px 0; margin-bottom:18px; max-width:72ch}
+.stmt{font-size:1.15rem; font-weight:700; margin-bottom:16px; max-width:68ch}
+.opts{display:grid; gap:10px; max-width:640px}
+.opt{display:flex; gap:12px; align-items:center; text-align:left; width:100%; background:var(--card); color:var(--text); border:2px solid var(--line); border-radius:10px; padding:12px 14px}
+.opt .k{flex:none; width:28px; height:28px; border-radius:50%; border:2px solid var(--ink-soft); display:grid; place-items:center; font-weight:700; color:var(--ink); font-size:.9rem}
+.opt:hover{border-color:var(--ink-soft)}
+.opt[aria-checked="true"]{border-color:var(--ink); background:linear-gradient(100deg,transparent 0 6px,var(--mark) 6px calc(100% - 4px),transparent calc(100% - 4px)); color:var(--mark-text)}
+.opt[aria-checked="true"] .k{background:var(--ink); color:var(--card); border-color:var(--ink)}
+table.data{border-collapse:collapse; margin:0 0 18px; font-variant-numeric:tabular-nums; background:var(--card)}
+table.data th,table.data td{border:1px solid var(--line); padding:7px 14px; text-align:right}
+table.data th:first-child,table.data td:first-child{text-align:left}
+table.data th{color:var(--ink); font-weight:700}
+.tablewrap{overflow-x:auto; max-width:100%}
+.seq{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; max-width:520px; margin-bottom:22px}
+.panel{background:var(--card); border:1.5px solid var(--line); border-radius:8px; color:var(--text); aspect-ratio:1; display:grid; place-items:center}
+.panel svg{width:100%; height:100%; display:block}
+.panel.q{border-style:dashed; border-color:var(--ink-soft); font-family:var(--display); font-weight:800; font-size:2rem; color:var(--ink-soft)}
+.aopts{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; max-width:520px}
+.aopt{background:var(--card); border:2px solid var(--line); border-radius:10px; padding:6px; color:var(--text); display:flex; flex-direction:column; align-items:center; gap:2px}
+.aopt .k{font-weight:700; color:var(--ink); font-size:.95rem}
+.aopt .panel{border:0; width:100%}
+.aopt[aria-checked="true"]{border-color:var(--ink); background:var(--mark); color:var(--mark-text)}
+.aopt[aria-checked="true"] .panel{background:transparent; color:var(--mark-text)}
+.foot{display:flex; justify-content:space-between; align-items:center; gap:12px; padding-top:22px; margin-top:18px; border-top:1px solid var(--line)}
+.kbd{font-size:.85rem; color:var(--muted)}
+
+/* Results */
+.score{font-family:var(--display); font-weight:800; font-size:clamp(3.5rem,14vw,6rem); color:var(--ink); line-height:1; letter-spacing:-0.03em; font-variant-numeric:tabular-nums}
+.secres{display:grid; grid-template-columns:1fr auto; gap:4px 16px; align-items:baseline; padding:12px 0; border-bottom:1px solid var(--line)}
+.secres .meter{grid-column:1/-1; height:8px; background:var(--line); border-radius:4px; overflow:hidden}
+.secres .meter i{display:block; height:100%; background:var(--ink)}
+details.review{border-top:1px solid var(--line); padding:10px 0}
+details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-family:var(--display); font-size:1.1rem}
+.ritem{padding:14px 0; border-bottom:1px dashed var(--line)}
+.ritem:last-child{border-bottom:0}
+.ritem .res{font-weight:700}
+.ritem .res.ok{color:var(--ok)} .ritem .res.bad{color:var(--bad)}
+.ritem .exp{background:var(--paper); border-radius:8px; padding:10px 12px; margin-top:8px; font-size:.97rem}
+.mini .seq{max-width:340px; margin-bottom:8px}
+.mini .panel.q{font-size:1.2rem}
+.mini .passage{font-size:.95rem; padding:10px 12px}
+/* Result detail */
+.statgrid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:16px}
+.stat{border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--card)}
+.stat b{display:block; font-family:var(--display); font-size:1.4rem; color:var(--ink); font-variant-numeric:tabular-nums}
+.stat span{font-size:.9rem; color:var(--muted)}
+.controls{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--paper); padding:12px 0 10px; border-bottom:1px solid var(--line); margin-top:26px}
+.chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px}
+.chips button{flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); border-radius:999px; padding:5px 12px; font-size:.92rem; font-weight:600}
+.chips button[aria-pressed="true"]{border-color:var(--ink); background:var(--ink); color:var(--card)}
+.chips + .chips{margin-top:6px}
+.navgrid{display:flex; flex-wrap:wrap; gap:5px; margin:14px 0 4px}
+.navgrid button{width:32px; height:32px; border-radius:6px; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-size:.82rem; font-weight:700; font-variant-numeric:tabular-nums; padding:0}
+.navgrid .st-ok{background:var(--ok-bg); border-color:var(--ok); color:var(--ok)}
+.navgrid .st-bad{background:var(--bad-bg); border-color:var(--bad); color:var(--bad)}
+.navgrid .st-skip{border-style:dashed; color:var(--muted)}
+.qcard{background:var(--card); border:1.5px solid var(--line); border-left:5px solid var(--line); border-radius:10px; padding:16px 18px; margin:14px 0; scroll-margin-top:150px}
+.qcard.st-ok{border-left-color:var(--ok)} .qcard.st-bad{border-left-color:var(--bad)} .qcard.st-skip{border-left-style:dashed}
+.qhead{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:.92rem; color:var(--muted); margin-bottom:10px}
+.qhead .res{font-weight:700} .res.ok{color:var(--ok)} .res.bad{color:var(--bad)} .res.skip{color:var(--muted)}
+.ro{list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px}
+.ro li{display:flex; gap:10px; align-items:center; border:1.5px solid var(--line); border-radius:8px; padding:7px 10px}
+.ro .k{flex:none; font-weight:700; color:var(--ink); width:18px}
+.ro em{margin-left:auto; font-style:normal; font-size:.82rem; font-weight:700; white-space:nowrap}
+.ro .is-ans{border-color:var(--ok); background:var(--ok-bg)} .ro .is-ans em{color:var(--ok)}
+.ro .is-wrong{border-color:var(--bad); background:var(--bad-bg)} .ro .is-wrong em{color:var(--bad)}
+.ro.abs{grid-template-columns:repeat(4,minmax(0,1fr)); max-width:420px}
+.ro.abs li{flex-direction:column; padding:4px; gap:0}
+.ro.abs li .panel{border:0; width:100%; background:transparent}
+.ro.abs em{margin:0; font-size:.72rem}
+.why{margin-top:12px; padding:10px 12px; background:var(--paper); border-radius:8px}
+.why p{margin:0}
+.why .tip{margin-top:6px; font-size:.92rem; color:var(--muted)}
+.empty{padding:28px 0; color:var(--muted)}
+.attempts td{padding:9px 4px; border-bottom:1px dashed var(--line); vertical-align:middle}
+@media (max-width:560px){.statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){
+  .wrap{padding:18px 14px 48px}
+  .structure .meta{font-size:.85rem}
+  .aopts{gap:6px}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<main class="wrap" id="app" aria-live="polite"></main>
+
+<script>
+/* ---------- helpers ---------- */
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function mc(correct,cands,f=fmt){
+  const c0=f(correct),seen=new Set([c0]),opts=[c0];
+  for(const c of shuffle(cands)){const s=f(c);if(!seen.has(s)&&opts.length<4){seen.add(s);opts.push(s)}}
+  const step=Math.max(1,Math.round(Math.abs(correct)*0.1));let k=1;
+  while(opts.length<4&&k<40){const s=f(correct+step*Math.ceil(k/2)*(k%2?1:-1));k++;if(!seen.has(s)){seen.add(s);opts.push(s)}}
+  const sh=shuffle(opts);return{opts:sh,ans:sh.indexOf(c0)};
+}
+const signed=(v,unit='')=>(v>0?'+':v<0?'−':'')+fmt(Math.abs(v))+unit;
+
+const SECTIONS=[
+  {key:'num',name:'Numerical Reasoning',vi:'Suy luận số học',count:12,minutes:10,tip:'Được dùng giấy, bút và máy tính. Đọc kỹ đơn vị và đề hỏi giá trị nào.'},
+  {key:'verb',name:'Verbal Reasoning',vi:'Suy luận ngôn ngữ',count:15,minutes:10,tip:'Chỉ dựa vào thông tin trong đoạn văn. Chọn Cannot say khi đoạn văn không đủ để kết luận đúng hay sai.'},
+  {key:'abs',name:'Abstract Reasoning',vi:'Suy luận trừu tượng',count:50,minutes:10,tip:'Khoảng 12 giây mỗi câu. Tìm quy luật thay đổi của từng yếu tố: xoay, số cạnh, tô màu, số chấm, vị trí ô vuông.'},
+  {key:'crit',name:'Critical Thinking',vi:'Tư duy phản biện',count:16,minutes:12,tip:'Gồm suy diễn, giả định ngầm, đánh giá lập luận. Kết luận phải chắc chắn đúng, không phải chỉ có vẻ hợp lý.'},
+];
+const LEVELS={easy:'Dễ',medium:'Trung bình',hard:'Khó',mixed:'Tăng dần'};
+
+/* ---------- numerical ---------- */
+const NUM={
+easy:[
+ ()=>{const p=pick([10,15,20,25,30,40,60]),y=R(2,30)*20,a=p*y/100;
+  return{q:`What is ${p}% of ${fmt(y)}?`,...mc(a,[a*2,a/2,y-a,a+10]),exp:`${p}% × ${fmt(y)} = ${fmt(y)} × ${p/100} = ${fmt(a)}.`}},
+ ()=>{const a=R(2,20),d=R(3,9),t=[0,1,2,3,4].map(i=>a+i*d),n=a+5*d;
+  return{q:`What number comes next? ${t.join(', ')}, ?`,...mc(n,[n+d,n-1,n+1,n-d+1]),exp:`Mỗi số tăng thêm ${d}: ${t[4]} + ${d} = ${n}.`}},
+ ()=>{const n=R(3,6),u=R(3,12)+pick([0,0.5]);let m=pick([7,8,9,10,12,15]);const p=n*u,a=m*u;
+  return{q:`A pack of ${n} notebooks costs $${fmt(p)}. At the same price per notebook, how much do ${m} notebooks cost?`,...mc(a,[a+u,a-u,p+m,m*(u+1)],v=>'$'+fmt(v)),exp:`Giá mỗi cuốn: $${fmt(p)} ÷ ${n} = $${fmt(u)}. ${m} cuốn: ${m} × $${fmt(u)} = $${fmt(a)}.`}},
+ ()=>{const pr=R(4,40)*10,d=pick([10,20,25,30]),a=pr*(100-d)/100;
+  return{q:`A jacket costs $${pr}. It is on sale for ${d}% off. What is the sale price?`,...mc(a,[pr*d/100,pr-d,pr*(100+d)/100,a-10],v=>'$'+fmt(v)),exp:`Giảm ${d}% nghĩa là trả ${100-d}% giá gốc: $${pr} × ${(100-d)/100} = $${fmt(a)}.`}},
+],
+medium:[
+ ()=>{const A=R(4,20)*100,inc=pick([12,15,18,24,35,40]),B=A*(100+inc)/100,wrong=Math.round((B-A)/B*1000)/10;
+  return{q:`A shop's monthly revenue grew from $${fmt(A)} to $${fmt(B)}. What was the percentage increase?`,...mc(inc,[wrong,inc+5,inc-5,inc*2],v=>fmt(v)+'%'),exp:`Mức tăng $${fmt(B-A)}, chia cho giá trị ban đầu: ${fmt(B-A)} ÷ ${fmt(A)} = ${inc}%. Lỗi hay gặp là chia cho giá trị mới (ra ${wrong}%).`}},
+ ()=>{const a=R(2,5),b=a+R(1,4),k=R(5,40)*10,T=(a+b)*k;
+  return{q:`A bonus pool of $${fmt(T)} is split between two teams in the ratio ${a}:${b}. How much does the team with the larger share receive?`,...mc(b*k,[a*k,T/2,b*k+k,T-a*k-k],v=>'$'+fmt(v)),exp:`Tổng ${a+b} phần, mỗi phần $${fmt(T)} ÷ ${a+b} = $${fmt(k)}. Phần lớn hơn: ${b} × $${fmt(k)} = $${fmt(b*k)}.`}},
+ ()=>{const s=R(1,10),d=R(1,4),c=pick([1,2]);const t=[s];for(let i=1;i<6;i++)t.push(t[i-1]+d+(i-1)*c);const sh=t.slice(0,5),n=t[5],diffs=sh.slice(1).map((v,i)=>v-sh[i]),ld=diffs[3];
+  return{q:`What number comes next? ${sh.join(', ')}, ?`,...mc(n,[sh[4]+ld,n+c,n+1,n-1]),exp:`Khoảng cách giữa các số là ${diffs.join(', ')}, mỗi lần tăng thêm ${c}. Khoảng tiếp theo là ${ld+c}: ${sh[4]} + ${ld+c} = ${n}.`}},
+ ()=>{const a=R(2,5),r=pick([2,3]),t=[0,1,2,3,4].map(i=>a*r**i),n=a*r**5;
+  return{q:`What number comes next? ${t.join(', ')}, ?`,...mc(n,[t[4]+(t[4]-t[3]),n+a,n-r,t[4]*(r+1)]),exp:`Mỗi số nhân ${r}: ${t[4]} × ${r} = ${n}.`}},
+ ()=>{const names=['Alpha','Beta','Gamma','Delta'];let rows,pc,best,bestAbs,ok,tries=0;
+  do{rows=names.map(n=>{const q1=R(8,40)*10;return[n,q1,q1+R(-4,20)*10]});pc=rows.map(r=>(r[2]-r[1])/r[1]);const mx=Math.max(...pc);best=pc.indexOf(mx);const ab=rows.map(r=>r[2]-r[1]);bestAbs=ab.indexOf(Math.max(...ab));ok=pc.filter(v=>Math.abs(v-mx)<0.01).length===1;tries++}while((!ok||best===bestAbs)&&tries<300);
+  const list=rows.map((r,i)=>`${r[0]} ${signed(Math.round(pc[i]*1000)/10,'%')}`).join(', ');
+  return{q:`The table shows units sold. Which product had the largest percentage increase from Q1 to Q2?`,table:{head:['Product','Q1','Q2'],rows:rows.map(r=>[r[0],fmt(r[1]),fmt(r[2])])},opts:names.slice(),ans:best,exp:`Tỷ lệ thay đổi: ${list}. ${names[best]} tăng mạnh nhất theo %${best!==bestAbs?`, dù ${names[bestAbs]} tăng nhiều nhất về số lượng`:''}.`}},
+ ()=>{const t=pick([[1.5,'1 hour 30 minutes'],[2.25,'2 hours 15 minutes'],[2.5,'2 hours 30 minutes'],[1.25,'1 hour 15 minutes'],[0.75,'45 minutes']]),v=R(4,12)*10,D=v*t[0];
+  return{q:`A train travels ${fmt(D)} km in ${t[1]}. What is its average speed?`,...mc(v,[v+10,v-10,Math.round(D/(t[0]+0.25)),Math.round(D/Math.floor(t[0]+1))],x=>fmt(x)+' km/h'),exp:`Đổi thời gian ra giờ: ${t[1]} = ${t[0]} giờ. Vận tốc: ${fmt(D)} ÷ ${t[0]} = ${v} km/h.`}},
+],
+hard:[
+ function g(){const M1=R(4,12)*100,M2=R(4,12)*100,s1=R(12,30),s2=R(10,32),r1=M1*s1/100,r2=M2*s2/100,d=r2-r1;if(d===0)return g();
+  const f=v=>signed(v)+' $M';
+  return{q:`The table shows the total market size and Company X's market share. By how much did Company X's revenue change from 2024 to 2025?`,table:{head:['Year','Market size ($M)','Company X share'],rows:[['2024',fmt(M1),s1+'%'],['2025',fmt(M2),s2+'%']]},...mc(d,[(s2-s1)*M1/100,(s2-s1)*M2/100,-d,M2-M1],f),exp:`2024: ${fmt(M1)} × ${s1}% = ${fmt(r1)}. 2025: ${fmt(M2)} × ${s2}% = ${fmt(r2)}. Chênh lệch: ${f(d)}.`}},
+ ()=>{const x=pick([10,20,25,30,40,50]),y=pick([10,20,25,30,40,50]),k=(1+x/100)*(1-y/100),net=Math.round((k-1)*1000)/10,f=v=>signed(v,'%');
+  return{q:`A product's price rises by ${x}% and then falls by ${y}%. What is the overall change from the original price?`,...mc(net,[x-y,net+5,-net,net-5],f),exp:`Nhân hệ số: ${1+x/100} × ${1-y/100} = ${fmt(Math.round(k*1000)/1000)}, tức thay đổi ${f(net)}. Không được cộng trừ % trực tiếp (${x}% − ${y}% = ${x-y}% là sai).`}},
+ ()=>{const V=R(2,20)*1e6,fee=pick([1,1.5,2,3]),rate=25000,a=V*(1-fee/100)/rate,f=v=>'$'+v.toFixed(2);
+  return{q:`You exchange ${fmt(V)} VND to US dollars. The bank deducts a ${fee}% fee from the VND amount, then converts at 25,000 VND per USD. How many dollars do you receive?`,...mc(a,[V/rate,V*(1+fee/100)/rate,V/rate-fee,a-1],f),exp:`Sau phí: ${fmt(V)} × ${(100-fee)/100} = ${fmt(V*(1-fee/100))} VND. Quy đổi: ÷ 25,000 = ${f(a)}.`}},
+ ()=>{const a=R(1,9),d=R(2,6),b=R(1,4),t=[];for(let i=0;i<4;i++){t.push(a+i*d);t.push(b*2**i)}const sh=t.slice(0,7),n=t[7];
+  return{q:`What number comes next? ${sh.join(', ')}, ?`,...mc(n,[t[6]+d,n*2,n+b,t[5]+d]),exp:`Hai dãy xen kẽ: vị trí lẻ tăng ${d} (${a}, ${a+d}, ${a+2*d}, ${a+3*d}); vị trí chẵn nhân 2 (${b}, ${b*2}, ${b*4}). Số tiếp theo thuộc dãy chẵn: ${b*4} × 2 = ${n}.`}},
+ function g(){const n=R(5,12),A=R(60,80),dd=pick([1,2,-1]),B=A+dd,x=(n+1)*B-n*A;if(x>100||x<0)return g();
+  return{q:`The average score of ${n} students is ${A}. When one more student joins, the average becomes ${B}. What is the new student's score?`,...mc(x,[B,2*B-A,n*B-(n-1)*A,x+n]),exp:`Tổng cũ: ${n} × ${A} = ${n*A}. Tổng mới: ${n+1} × ${B} = ${(n+1)*B}. Điểm người mới: ${(n+1)*B} − ${n*A} = ${x}.`}},
+ ()=>{const[a,b]=pick([[3,6],[4,12],[6,12],[10,15],[2,3],[4,6],[5,20]]),mins=Math.round(a*b/(a+b)*60);
+  const f=m=>{const h=Math.floor(m/60),mm=m%60;return(h?h+' h':'')+(h&&mm?' ':'')+(mm?mm+' min':'')};
+  return{q:`Machine A can finish a job alone in ${a} hours. Machine B can finish it alone in ${b} hours. Working together, how long will they take?`,...mc(mins,[(a+b)/2*60,Math.abs(a-b)*60,mins+30,mins-20],f),exp:`Mỗi giờ A làm 1/${a}, B làm 1/${b} công việc. Cùng làm: 1/${a} + 1/${b} = ${a+b}/${a*b} mỗi giờ, nên cần ${a*b}/${a+b} giờ = ${f(mins)}.`}},
+]};
+
+/* ---------- abstract ---------- */
+function genAbs(level){
+  const nr={easy:1,medium:2,hard:3}[level];let rules;
+  do{rules=shuffle(['rot','sides','fill','dots','corner']).slice(0,nr)}while(rules.includes('rot')&&rules.includes('sides'));
+  const P={};
+  if(rules.includes('rot'))P.rot={start:pick([0,45,90,135,180,225,270,315]),step:pick(level==='easy'?[90]:level==='medium'?[45,90]:[45,135])*pick([1,-1])};
+  if(rules.includes('sides'))P.sides=level==='hard'&&Math.random()<.5?{start:7,step:-1}:{start:3,step:1};
+  if(rules.includes('fill'))P.fill={period:level==='hard'?pick([2,3]):2,phase:R(0,1)};
+  if(rules.includes('dots'))P.dots=level==='hard'&&Math.random()<.5?{start:5,step:-1}:{start:1,step:1};
+  if(rules.includes('corner'))P.corner={start:R(0,3),step:pick(level==='easy'?[1]:level==='medium'?[1,3]:[1,2,3])};
+  const shape=P.sides?'poly':P.rot?'arrow':pick(['arrow','poly']);
+  const base={sides:R(3,6),rot:shape==='arrow'?pick([0,90,180,270]):0,fill:Math.random()<.5,dots:level==='easy'?0:R(0,3),corner:level==='hard'?R(0,3):-1};
+  const st=i=>({shape,
+    sides:P.sides?P.sides.start+i*P.sides.step:base.sides,
+    rot:P.rot?(((P.rot.start+i*P.rot.step)%360)+360)%360:base.rot,
+    fill:P.fill?((i+P.fill.phase)%P.fill.period===0):base.fill,
+    dots:P.dots?P.dots.start+i*P.dots.step:base.dots,
+    corner:P.corner?(P.corner.start+i*P.corner.step)%4:base.corner});
+  const seq=[0,1,2,3].map(st),A=st(4),m=o=>({...A,...o});
+  const groups=[];
+  if(P.rot)groups.push(shuffle([m({rot:(A.rot+P.rot.step+360)%360}),m({rot:(A.rot+180)%360}),m({rot:seq[3].rot})]));
+  if(P.sides)groups.push(shuffle([m({sides:A.sides+1}),m({sides:Math.max(3,A.sides-1)})]));
+  if(P.fill)groups.push([m({fill:!A.fill})]);
+  if(P.dots)groups.push(shuffle([m({dots:A.dots+1}),m({dots:Math.max(0,A.dots-1)})]));
+  if(P.corner)groups.push(shuffle([m({corner:(A.corner+1)%4}),m({corner:(A.corner+2)%4})]));
+  const extra=shuffle([m({fill:!A.fill}),m({dots:A.dots+1}),shape==='arrow'?m({rot:(A.rot+90)%360}):m({sides:A.sides+1}),m({dots:Math.max(0,A.dots-1)})]);
+  const key=s=>JSON.stringify(s),seen=new Set([key(A)]),ds=[];
+  const add=s=>{if(ds.length<3&&!seen.has(key(s))){seen.add(key(s));ds.push(s)}};
+  for(let r=0;r<3;r++)for(const g of groups)if(g[r])add(g[r]);
+  extra.forEach(add);
+  const opts=shuffle([A,...ds]);
+  const dir=s=>s>0?'theo chiều kim đồng hồ':'ngược chiều kim đồng hồ';
+  const ex=[];
+  if(P.rot)ex.push(`mũi tên xoay ${dir(P.rot.step)} ${Math.abs(P.rot.step)}° mỗi bước`);
+  if(P.sides)ex.push(`số cạnh của hình ${P.sides.step>0?'tăng':'giảm'} 1 mỗi bước`);
+  if(P.fill)ex.push(P.fill.period===2?'hình xen kẽ tô đặc và để rỗng':'cứ 3 hình thì có 1 hình tô đặc');
+  if(P.dots)ex.push(`số chấm ${P.dots.step>0?'tăng':'giảm'} 1 mỗi bước`);
+  if(P.corner)ex.push(`ô vuông nhỏ ${P.corner.step===1?'đi 1 góc theo chiều kim đồng hồ':P.corner.step===3?'đi 1 góc ngược chiều kim đồng hồ':'nhảy sang góc đối diện'}`);
+  const e=ex.join('; ');
+  return{seq,opts,ans:opts.indexOf(A),exp:`Quy luật: ${e.charAt(0).toUpperCase()+e.slice(1)}.${ex.length>1?' Đáp án đúng phải thỏa mãn tất cả quy luật cùng lúc; mỗi phương án sai thường chỉ sai một yếu tố.':''}`};
+}
+function panelSVG(s){
+  let g='';const fill=s.fill?'currentColor':'none';
+  if(s.shape==='arrow'){
+    g+=`<g transform="rotate(${s.rot} 50 46)"><path d="M50 22 L67 42 L56 42 L56 70 L44 70 L44 42 L33 42 Z" fill="${fill}" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></g>`;
+  }else{
+    const n=s.sides,pts=[];for(let i=0;i<n;i++){const a=(-90+i*360/n)*Math.PI/180;pts.push((50+23*Math.cos(a)).toFixed(1)+','+(48+23*Math.sin(a)).toFixed(1))}
+    g+=`<polygon points="${pts.join(' ')}" fill="${fill}" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>`;
+  }
+  for(let i=0;i<s.dots;i++)g+=`<circle cx="${50-(s.dots-1)*4.5+i*9}" cy="88" r="2.8" fill="currentColor"/>`;
+  if(s.corner>=0){const c=[[6,6],[86,6],[86,86],[6,86]][s.corner];g+=`<rect x="${c[0]}" y="${c[1]}" width="8" height="8" fill="currentColor"/>`}
+  return`<svg viewBox="0 0 100 100" aria-hidden="true">${g}</svg>`;
+}
+
+/* ---------- verbal bank ---------- */
+const T='True',F='False',C='Cannot say';
+const VERB={
+easy:[
+ {p:`The city library opened a new branch in the eastern district last March. The branch is open six days a week and is closed on Mondays. It offers free Wi-Fi and a children's reading room. Since opening, it has registered more than 4,000 new members, most of whom live within two kilometres of the building.`,
+  s:[[`The new branch is closed on Mondays.`,T,`Đoạn văn nói rõ chi nhánh đóng cửa vào thứ Hai.`],
+     [`Visitors must pay to use the Wi-Fi at the new branch.`,F,`Wi-Fi được nêu là miễn phí.`],
+     [`The new branch is the largest library in the city.`,C,`Đoạn văn không so sánh quy mô với các thư viện khác.`]]},
+ {p:`Online grocery orders at FreshCart rose by 30% last year. The company says the growth came mainly from customers aged 25 to 40. To handle the extra demand, FreshCart hired 200 new delivery staff. However, the average delivery time increased from 45 to 55 minutes.`,
+  s:[[`FreshCart deliveries became faster last year.`,F,`Thời gian giao trung bình tăng từ 45 lên 55 phút, tức chậm hơn.`],
+     [`FreshCart hired new staff because of the higher number of orders.`,T,`Công ty tuyển 200 nhân viên giao hàng để đáp ứng nhu cầu tăng thêm.`],
+     [`Most FreshCart customers are over 40 years old.`,C,`Đoạn văn chỉ nói phần tăng trưởng đến chủ yếu từ nhóm 25–40, không cho biết cơ cấu tuổi của toàn bộ khách hàng.`]]},
+ {p:`Coffee plants grow best at high altitudes with stable temperatures. Vietnam is one of the world's largest coffee exporters, and most of its output is Robusta, a variety that tolerates heat better than Arabica. Robusta beans generally contain more caffeine than Arabica beans.`,
+  s:[[`Most of Vietnam's coffee output is Robusta.`,T,`Đoạn văn nói phần lớn sản lượng của Việt Nam là Robusta.`],
+     [`Arabica tolerates heat better than Robusta.`,F,`Đoạn văn nói ngược lại: Robusta chịu nóng tốt hơn Arabica.`],
+     [`Vietnam exports more coffee than Brazil.`,C,`Chỉ biết Việt Nam là một trong những nước xuất khẩu lớn nhất; không có so sánh với Brazil.`],
+     [`Robusta beans usually have more caffeine than Arabica beans.`,T,`Đoạn văn nói Robusta thường chứa nhiều caffeine hơn.`]]},
+ {p:`GreenRide, a bike-sharing service, launched in Da Nang in 2024 with 500 bikes. Users pay through a mobile app, and the first 30 minutes of each ride are free. The service operates from 5 a.m. to 11 p.m. every day. GreenRide plans to add 300 more bikes next year.`,
+  s:[[`A 20-minute GreenRide trip costs nothing.`,T,`30 phút đầu mỗi chuyến được miễn phí.`],
+     [`GreenRide operates 24 hours a day.`,F,`Dịch vụ chỉ hoạt động từ 5 giờ sáng đến 11 giờ đêm.`],
+     [`GreenRide is the only bike-sharing service in Da Nang.`,C,`Đoạn văn không nhắc đến các dịch vụ khác.`]]},
+ {p:`The company canteen changed its menu in June. It now offers a vegetarian option every day and serves fewer fried dishes. Lunch prices stayed the same. A staff survey in July showed that 70% of employees were satisfied with the new menu, up from 55% in the previous survey.`,
+  s:[[`Lunch prices increased after the menu change.`,F,`Giá bữa trưa được giữ nguyên.`],
+     [`Employee satisfaction with the canteen menu rose.`,T,`Từ 55% lên 70%.`],
+     [`The canteen no longer serves fried dishes.`,F,`Canteen chỉ giảm số món chiên, không bỏ hẳn.`],
+     [`Most employees are vegetarian.`,C,`Đoạn văn không cho biết bao nhiêu người ăn chay.`]]},
+],
+medium:[
+ {p:`A survey of 1,200 office workers found that 62% preferred a hybrid schedule over working fully in the office or fully remotely. Among workers with children under ten, the share rose to 74%. The survey's authors caution that respondents were recruited through a professional networking site, so the results may not reflect workers in manual or shift-based jobs.`,
+  s:[[`Fewer than half of the respondents preferred working fully remotely.`,T,`62% chọn hybrid, nên tối đa 38% chọn các phương án còn lại, chắc chắn dưới một nửa.`],
+     [`Workers with young children were more likely than average to prefer hybrid work.`,T,`74% so với mức chung 62%.`],
+     [`The survey results apply equally to factory workers.`,C,`Tác giả chỉ nói kết quả "có thể không" phản ánh nhóm này; không đủ để khẳng định đúng hay sai.`],
+     [`Most respondents had children under ten.`,C,`Đoạn văn không cho biết bao nhiêu người có con nhỏ.`]]},
+ {p:`Electric scooter rentals were introduced in Riverton in 2022. In the first year, the city recorded 150 scooter-related injuries, compared with 40 cycling injuries. City officials noted that the number of scooter trips was roughly five times the number of shared-bike trips during the same period.`,
+  s:[[`There were more scooter injuries than cycling injuries in the first year.`,T,`150 so với 40.`],
+     [`Riding a rental scooter in Riverton was more dangerous per trip than riding a shared bike.`,C,`Số ca chấn thương xe đạp có thể gồm cả xe đạp cá nhân, không chỉ xe đạp chia sẻ, nên không tính được tỷ lệ trên mỗi chuyến.`],
+     [`Scooter rentals in Riverton started before 2022.`,F,`Dịch vụ được giới thiệu vào năm 2022.`]]},
+ {p:`All employees who complete the advanced data course receive a certificate. Employees with the certificate are eligible to apply for the analytics team, but the team only accepts applicants who have worked at the company for at least two years. Linh completed the advanced data course last month and joined the company eighteen months ago.`,
+  s:[[`Linh has received a certificate.`,T,`Ai hoàn thành khóa học đều nhận chứng chỉ, và Linh đã hoàn thành.`],
+     [`Linh can currently be accepted onto the analytics team.`,F,`Linh mới làm 18 tháng, chưa đủ điều kiện 2 năm.`],
+     [`Linh plans to apply to the analytics team.`,C,`Đoạn văn không nói gì về ý định của Linh.`]]},
+ {p:`The number of mobile banking users in the region grew from 8 million to 12 million between 2023 and 2025. Over the same period, the number of bank branches fell by 15%. A banking association report suggests the two trends are linked, but notes that some branches closed because of mergers between banks.`,
+  s:[[`Mobile banking users increased by 50% between 2023 and 2025.`,T,`Từ 8 lên 12 triệu là tăng 4 triệu, tức 50%.`],
+     [`Every branch closure was caused by the growth of mobile banking.`,F,`Báo cáo nói một số chi nhánh đóng cửa do sáp nhập ngân hàng.`],
+     [`Bank mergers were the main reason for branch closures.`,C,`Chỉ biết "một số" chi nhánh đóng do sáp nhập, không biết đó có phải lý do chính.`]]},
+ {p:`The museum offers free entry on the first Sunday of every month. On other days, adults pay 50,000 VND and children under 12 enter free. Group bookings of 20 or more people receive a 20% discount, but this discount cannot be combined with any other offer.`,
+  s:[[`A 10-year-old child pays nothing to enter on a Tuesday.`,T,`Trẻ dưới 12 tuổi luôn được vào miễn phí.`],
+     [`A group of 25 adults visiting on the first Sunday of the month pays 40,000 VND per person.`,F,`Chủ nhật đầu tháng vào cửa miễn phí, nên nhóm không phải trả 40.000 VND.`],
+     [`A group of 15 adults visiting on a Wednesday receives a discount.`,F,`Ưu đãi nhóm chỉ áp dụng từ 20 người trở lên.`],
+     [`The museum is busiest on free-entry Sundays.`,C,`Đoạn văn không có thông tin về lượng khách.`]]},
+],
+hard:[
+ {p:`Contrary to popular belief, the Great Wall of China is not visible to the naked eye from low Earth orbit under normal conditions. Astronauts report that while some large human-made structures, such as airports and highways, can occasionally be seen, the wall's narrow width and its colour, which closely matches the surrounding terrain, make it extremely difficult to spot.`,
+  s:[[`The Great Wall is the only human-made structure visible from low Earth orbit.`,F,`Đoạn văn nói sân bay và đường cao tốc đôi khi nhìn thấy được, còn Vạn Lý Trường Thành thì không.`],
+     [`The colour of the Great Wall contributes to how hard it is to see from orbit.`,T,`Màu sắc gần giống địa hình xung quanh được nêu là một nguyên nhân.`],
+     [`Under unusual conditions, astronauts have seen the Great Wall from low Earth orbit.`,C,`"Không nhìn thấy trong điều kiện bình thường" không có nghĩa là đã từng nhìn thấy trong điều kiện đặc biệt.`],
+     [`Highways are always visible from low Earth orbit.`,F,`Đoạn văn chỉ nói "đôi khi" có thể thấy.`]]},
+ {p:`A pharmaceutical company reported that its new drug reduced migraine frequency by 40% in a twelve-week trial, compared with a 25% reduction in the placebo group. The trial included 300 adults, none of whom were over 65. The company plans to seek approval for the drug for all adult patients.`,
+  s:[[`The drug performed better than the placebo in the trial.`,T,`Giảm 40% so với 25% ở nhóm giả dược.`],
+     [`The drug has been shown to be effective for patients over 65.`,F,`Không ai trên 65 tuổi tham gia thử nghiệm, nên hiệu quả với nhóm này chưa thể đã được chứng minh.`],
+     [`The placebo had no effect on migraine frequency.`,F,`Nhóm giả dược cũng giảm 25%.`],
+     [`The drug will be approved for all adult patients.`,C,`Công ty mới dự định xin phê duyệt; kết quả chưa biết.`]]},
+ {p:`Any project with a budget above 2 billion VND must be reviewed by the investment committee. Every project the committee reviewed in 2025 was approved, except those submitted in December. Project Lotus had a budget of 2.5 billion VND and was submitted and reviewed in October 2025.`,
+  s:[[`Project Lotus was reviewed by the investment committee.`,T,`Ngân sách 2,5 tỷ vượt ngưỡng 2 tỷ, và đoạn văn nói dự án đã được xét duyệt.`],
+     [`Project Lotus was approved.`,T,`Được xét năm 2025 và nộp vào tháng 10, không thuộc nhóm ngoại lệ tháng 12, nên đã được duyệt.`],
+     [`All projects with budgets below 2 billion VND were approved in 2025.`,C,`Đoạn văn chỉ nói về các dự án qua hội đồng; dự án dưới 2 tỷ không bắt buộc qua hội đồng và không có thông tin về chúng.`],
+     [`No project submitted in December 2025 was reviewed by the committee.`,C,`Đoạn văn chỉ nói các dự án tháng 12 không được duyệt, không nói chúng có được xem xét hay không.`]]},
+ {p:`A study tracked 2,000 adults for ten years and found that those who drank two or more cups of coffee a day had a 12% lower rate of heart disease than those who drank none. The researchers emphasised that the study was observational, and that coffee drinkers in the sample were also, on average, more physically active.`,
+  s:[[`Drinking coffee reduces the risk of heart disease.`,C,`Nghiên cứu quan sát chỉ cho thấy mối liên hệ, không chứng minh quan hệ nhân quả; yếu tố vận động có thể là nguyên nhân.`],
+     [`Participants who drank no coffee had a higher rate of heart disease than those who drank two or more cups a day.`,T,`Nhóm uống từ 2 cốc có tỷ lệ thấp hơn 12%, tức nhóm không uống có tỷ lệ cao hơn.`],
+     [`The study lasted less than a decade.`,F,`Nghiên cứu kéo dài mười năm.`]]},
+ {p:`Under the company's travel policy, employees may book business-class flights only for journeys longer than six hours. Flights must be booked at least 14 days in advance unless a director approves an exception. Last month, Trang booked a business-class flight for a five-hour journey, eight days before departure.`,
+  s:[[`Trang's booking complied with the travel policy.`,F,`Chuyến bay 5 tiếng không đủ điều kiện hạng thương gia; ngoại lệ của giám đốc chỉ áp dụng cho thời hạn đặt vé.`],
+     [`A director approved Trang's booking.`,C,`Đoạn văn không nói có giám đốc phê duyệt hay không.`],
+     [`An employee booking an economy flight 10 days before departure needs a director's approval.`,T,`Đặt dưới 14 ngày trước phải có giám đốc phê duyệt ngoại lệ.`],
+     [`Business-class flights are allowed for an eight-hour journey.`,T,`Tám tiếng dài hơn sáu tiếng, nên đủ điều kiện.`]]},
+]};
+
+/* ---------- critical thinking bank ---------- */
+const CRIT={
+easy:[
+ {q:`All managers attend the Monday meeting. Huy is a manager. Which conclusion follows?`,o:[`Huy attends the Monday meeting.`,`Huy leads the Monday meeting.`,`Everyone at the Monday meeting is a manager.`,`It cannot be determined whether Huy attends.`],a:0,e:`Mọi quản lý đều dự họp, Huy là quản lý, nên Huy dự họp. Không suy ra được chiều ngược lại.`},
+ {q:`No cats are reptiles. Some pets are cats. Which conclusion must be true?`,o:[`Some pets are not reptiles.`,`No pets are reptiles.`,`All reptiles are pets.`,`Some cats are not pets.`],a:0,e:`Những thú cưng là mèo chắc chắn không phải bò sát. Không thể kết luận về toàn bộ thú cưng.`},
+ {q:`"We should open our store on Sundays because more customers will come." Which assumption does this argument rely on?`,o:[`Customers are willing to shop on Sundays.`,`Rent is cheaper on Sundays.`,`Competitors are closed on Sundays.`,`Staff prefer working on Sundays.`],a:0,e:`Lập luận chỉ đứng vững nếu khách hàng thực sự muốn đi mua sắm vào Chủ nhật.`},
+ {q:`Mai's train leaves at 8:00. It takes her 30 minutes to get from home to the station. She left home at 7:45. Assuming the usual travel time, what can be concluded?`,o:[`She will miss the train.`,`She will arrive 15 minutes early.`,`The train will be delayed.`,`She will take a taxi.`],a:0,e:`7:45 + 30 phút = 8:15, sau giờ tàu chạy.`},
+ {q:`Should the company offer free English classes to staff? Which is the strongest argument for "Yes"?`,o:[`Many of our clients are international, and staff need English to work with them.`,`English is a popular language.`,`Other companies offer classes too.`,`Classes would be fun.`],a:0,e:`Lập luận mạnh nhất gắn trực tiếp với lợi ích công việc của công ty; các phương án khác chung chung hoặc không liên quan.`},
+ {q:`An is taller than Bình. Bình is taller than Chi. Who is the shortest?`,o:[`Chi`,`Bình`,`An`,`It cannot be determined.`],a:0,e:`Thứ tự: An > Bình > Chi.`},
+],
+medium:[
+ {q:`Some engineers are designers. All designers use Figma. Which conclusion must be true?`,o:[`Some engineers use Figma.`,`All engineers use Figma.`,`All Figma users are designers.`,`Some designers are not engineers.`],a:0,e:`Những kỹ sư là designer đều dùng Figma, nên ít nhất một số kỹ sư dùng Figma. Các phương án khác không được đảm bảo.`},
+ {q:`"Sales of our app rose after we cut the price, so cutting the price again will raise sales further." Which assumption does this rely on?`,o:[`The price cut caused the rise in sales.`,`Competitors will raise their prices.`,`Customers prefer premium products.`,`The app has no bugs.`],a:0,e:`Lập luận ngầm giả định quan hệ nhân quả; doanh số có thể tăng vì lý do khác (mùa vụ, quảng cáo).`},
+ {q:`Residents of Town A live longer than residents of Town B. A council member concludes that Town A's new hospital is extending residents' lives. Which statement most weakens this conclusion?`,o:[`Town A residents already lived longer before the hospital was built.`,`The hospital employs 500 staff.`,`Town B is planning to build a hospital.`,`Many residents of Town A visited the hospital last year.`],a:0,e:`Nếu khoảng cách tuổi thọ đã có từ trước khi có bệnh viện, bệnh viện khó là nguyên nhân.`},
+ {q:`In a race, Lan finished before Minh but after Quân. Tú finished after Minh. Who finished second?`,o:[`Lan`,`Quân`,`Minh`,`Tú`],a:0,e:`Thứ tự: Quân, Lan, Minh, Tú.`},
+ {q:`If it rains, the match is cancelled. The match was not cancelled. Which conclusion follows?`,o:[`It did not rain.`,`It rained.`,`The match was played indoors.`,`It cannot be determined whether it rained.`],a:0,e:`Phủ định hệ quả (modus tollens): nếu mưa thì hủy; không hủy, vậy không mưa.`},
+ {q:`A company's revenue rose 20% last year, but its profit fell 5%. Which statement is best supported?`,o:[`The company's costs grew faster than its revenue.`,`The company sold fewer units.`,`The company lowered its prices.`,`The company's revenue fell.`],a:0,e:`Lợi nhuận = doanh thu − chi phí. Doanh thu tăng mà lợi nhuận giảm thì chi phí phải tăng nhanh hơn.`},
+],
+hard:[
+ {q:`If a candidate passes the test, they get an interview. Nam got an interview. Which conclusion follows?`,o:[`It cannot be determined whether Nam passed the test.`,`Nam passed the test.`,`Nam did not pass the test.`,`Every interviewee passed the test.`],a:0,e:`Đây là lỗi khẳng định hệ quả: có phỏng vấn không chứng minh đã qua bài test, vì có thể có con đường khác để được phỏng vấn.`},
+ {q:`No auditors are sales staff. Some sales staff work part-time. Which conclusion must be true?`,o:[`Some part-time workers are not auditors.`,`No part-time workers are auditors.`,`Some auditors work part-time.`,`All part-time workers are sales staff.`],a:0,e:`Những người bán hàng làm bán thời gian chắc chắn không phải kiểm toán viên. Không biết gì về các nhân viên bán thời gian khác.`},
+ {q:`"Our competitor's customers often complain about slow support. If we advertise our fast support, we will win many of their customers." Which assumption is this argument most dependent on?`,o:[`Support speed matters enough to make customers switch providers.`,`Our product is cheaper than the competitor's.`,`The competitor will not improve its support.`,`The complaints are exaggerated.`],a:0,e:`Nếu tốc độ hỗ trợ không đủ quan trọng để khách đổi nhà cung cấp, quảng cáo sẽ không lôi kéo được họ. Phương án 3 có liên quan nhưng không phải điều kiện cốt lõi.`},
+ {q:`A company says its new four-day week increased productivity, because output per employee rose 10% after the change. Which statement most strengthens this claim?`,o:[`A similar company that kept a five-day week saw no change in output over the same period.`,`Employees reported higher job satisfaction.`,`Four-day weeks are becoming popular.`,`Output per employee had been rising about 10% a year before the change.`],a:0,e:`Nhóm đối chứng không đổi cho thấy mức tăng không phải do xu hướng chung. Phương án cuối thực ra làm yếu lập luận.`},
+ {q:`Hoa, Kiên and Phúc each own exactly one pet: a cat, a dog or a fish. Hoa does not own the dog. Kiên owns the fish. Which must be true?`,o:[`Phúc owns the dog.`,`Hoa owns the fish.`,`Phúc owns the cat.`,`It cannot be determined.`],a:0,e:`Kiên có cá. Hoa không có chó nên Hoa có mèo. Còn lại Phúc có chó.`},
+ {q:`"Every successful startup founder I know dropped out of university, so dropping out increases your chance of success." What is the main flaw in this reasoning?`,o:[`It ignores the many people who dropped out and did not succeed.`,`It assumes all founders are successful.`,`It does not define what a startup is.`,`It relies on too many examples.`],a:0,e:`Thiên kiến kẻ sống sót: chỉ nhìn vào người thành công mà bỏ qua số đông bỏ học nhưng không thành công.`},
+]};
+
+/* ---------- critical thinking generators ---------- */
+const NAMES=['An','Bình','Chi','Dũng','Hà','Khoa','Linh','Minh','Nga','Phúc'];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const CATS=[['analysts','certified staff','people who can access the dashboard'],['interns','students','people eligible for the discount'],['drivers','contract workers','people who receive the fuel allowance'],['designers','creative staff','people who use Figma'],['managers','senior staff','people who attend the board meeting'],['engineers','remote workers','people who join the Friday call']];
+const CONDS=[['the server is overloaded','the alert is triggered','the server is not overloaded','the alert is not triggered'],['it rains','the outdoor event is cancelled','it does not rain','the outdoor event is not cancelled'],['the budget is approved','the project starts in May','the budget is not approved','the project does not start in May'],['the printer is out of paper','the warning light is on','the printer is not out of paper','the warning light is not on'],['a director signs the form','the payment is released','no director signs the form','the payment is not released']];
+function genCrit(lv){
+  const k=pick({easy:['order','allA','mp'],medium:['order','someAll','mt'],hard:['order','noSome','ac','da']}[lv]);
+  let q,o,e;
+  if(k==='order'){
+    const n={easy:3,medium:4,hard:5}[lv],pp=shuffle(NAMES).slice(0,n);
+    const rel=pick([['is taller than','is shorter than','tallest','shortest','Từ cao đến thấp'],['is older than','is younger than','oldest','youngest','Từ lớn đến nhỏ tuổi'],['finished the race before','finished the race after','first','last','Thứ tự về đích']]);
+    const race=rel[2]==='first';
+    let clues=[];for(let i=0;i<n-1;i++)clues.push(Math.random()<.5?`${pp[i]} ${rel[0]} ${pp[i+1]}.`:`${pp[i+1]} ${rel[1]} ${pp[i]}.`);
+    if(lv!=='easy')clues=shuffle(clues);
+    const idx=lv==='easy'?pick([0,n-1]):lv==='medium'?pick([1,2]):pick([1,2,3]),ord=['','second','third','fourth'];
+    const ask=race?`Who finished ${idx===0?'first':idx===n-1?'last':ord[idx]}?`:idx===0?`Who is the ${rel[2]}?`:idx===n-1?`Who is the ${rel[3]}?`:`Who is the ${ord[idx]} ${rel[2]}?`;
+    q=clues.join(' ')+' '+ask;
+    o=[pp[idx],...shuffle(pp.filter((_,i)=>i!==idx)).slice(0,3)];if(o.length<4)o.push('It cannot be determined.');
+    e=`${rel[4]}: ${pp.join(', ')}.`;
+  }else if(['allA','someAll','noSome'].includes(k)){
+    const[A,B,Cc]=pick(CATS),nm=pick(NAMES);
+    if(k==='allA'){q=`All ${A} are ${B}. ${nm} is one of the ${A}. Which conclusion follows?`;o=[`${nm} is one of the ${B}.`,`All ${B} are ${A}.`,`${nm} is not one of the ${B}.`,`It cannot be determined whether ${nm} is one of the ${B}.`];e=`Mọi người trong nhóm "${A}" đều thuộc "${B}", và ${nm} thuộc "${A}", nên ${nm} thuộc "${B}". Không suy ra được chiều ngược lại.`}
+    if(k==='someAll'){q=`Some ${A} are ${B}. All ${B} are ${Cc}. Which conclusion must be true?`;o=[`Some ${A} are ${Cc}.`,`All ${A} are ${Cc}.`,`All ${Cc} are ${B}.`,`Some ${B} are not ${A}.`];e=`Những "${A}" thuộc "${B}" thì chắc chắn thuộc "${Cc}", nên ít nhất một số "${A}" thuộc "${Cc}". Các phương án khác không được đảm bảo.`}
+    if(k==='noSome'){q=`No ${A} are ${B}. Some ${Cc} are ${A}. Which conclusion must be true?`;o=[`Some ${Cc} are not ${B}.`,`No ${Cc} are ${B}.`,`Some ${B} are ${Cc}.`,`All ${A} are ${Cc}.`];e=`Những "${Cc}" thuộc "${A}" thì chắc chắn không thuộc "${B}". Không biết gì về những "${Cc}" còn lại.`}
+  }else{
+    const[P,Q,nP,nQ]=pick(CONDS),rule=`If ${P}, ${Q}.`;
+    if(k==='mp'){q=`${cap(rule)} Today, ${P}. Which conclusion follows?`;o=[cap(Q)+'.',cap(nQ)+'.','It cannot be determined.',cap(nP)+'.'];e=`Điều kiện đã xảy ra, nên kết quả chắc chắn xảy ra.`}
+    if(k==='mt'){q=`${cap(rule)} Today, ${nQ}. Which conclusion follows?`;o=[cap(nP)+'.',cap(P)+'.','It cannot be determined.',cap(Q)+'.'];e=`Phủ định hệ quả: nếu điều kiện xảy ra thì kết quả phải xảy ra; kết quả không xảy ra nên điều kiện cũng không xảy ra.`}
+    if(k==='ac'){q=`${cap(rule)} Today, ${Q}. Which conclusion follows?`;o=[`It cannot be determined whether ${P}.`,cap(P)+'.',cap(nP)+'.',cap(nQ)+'.'];e=`Lỗi khẳng định hệ quả: kết quả xảy ra có thể do nguyên nhân khác, nên không kết luận được về điều kiện.`}
+    if(k==='da'){q=`${cap(rule)} Today, ${nP}. Which conclusion follows?`;o=[`It cannot be determined whether ${Q}.`,cap(nQ)+'.',cap(Q)+'.',cap(P)+'.'];e=`Lỗi phủ định tiền đề: điều kiện không xảy ra không có nghĩa là kết quả cũng không xảy ra.`}
+  }
+  const sh=shuffle(o.map((t,i)=>({t,i})));
+  return{type:'crit',q,opts:sh.map(x=>x.t),ans:sh.findIndex(x=>x.i===0),exp:e,level:lv};
+}
+function critPool(lv,n){
+  const out=critItems(lv).slice(0,n),seen=new Set(out.map(x=>x.q));let t=0;
+  while(out.length<n&&t<200){const g=genCrit(lv);t++;if(!seen.has(g.q)){seen.add(g.q);out.push(g)}}
+  return shuffle(out);
+}
+
+/* ---------- build question sets ---------- */
+const lvAt=(i,n,level)=>level!=='mixed'?level:(i<Math.round(n/3)?'easy':i<Math.round(2*n/3)?'medium':'hard');
+const FALLBACK={easy:['easy','medium','hard'],medium:['medium','easy','hard'],hard:['hard','medium','easy']};
+const split=n=>{const e=Math.round(n/3),m=Math.round(n/3);return{easy:e,medium:m,hard:n-e-m}};
+function verbItems(lv){return shuffle(VERB[lv]).flatMap(p=>p.s.map(s=>({type:'verb',passage:p.p,statement:s[0],opts:[T,F,C],ans:[T,F,C].indexOf(s[1]),exp:s[2],level:lv})))}
+function critItems(lv){return shuffle(CRIT[lv]).map(c=>{const o=shuffle(c.o.map((t,i)=>({t,i})));return{type:'crit',q:c.q,opts:o.map(x=>x.t),ans:o.findIndex(x=>x.i===c.a),exp:c.e,level:lv}})}
+function bankCount(key,lv){return key==='verb'?VERB[lv].reduce((s,p)=>s+p.s.length,0):CRIT[lv].length}
+function build(def,level){
+  const n=def.count;
+  if(def.key==='num'||def.key==='abs'){
+    const out=[],seen=new Set();
+    for(let i=0;i<n;i++){const lv=lvAt(i,n,level);let q,t=0;
+      do{q=def.key==='num'?pick(NUM[lv])():genAbs(lv);t++}while(def.key==='num'&&seen.has(q.q)&&t<8);
+      if(q.q)seen.add(q.q);out.push({...q,type:def.key,level:lv})}
+    return out;
+  }
+  const part=(lv,k)=>def.key==='verb'?verbItems(lv).slice(0,k):critPool(lv,k);
+  if(level==='mixed'){const s=split(n);return['easy','medium','hard'].flatMap(lv=>part(lv,s[lv]))}
+  return part(level,n);
+}
+
+/* ---------- storage ---------- */
+const AKEY='cogmock.attempts';
+function loadAttempts(){try{return JSON.parse(localStorage.getItem(AKEY))||[]}catch(e){return[]}}
+function saveAttempt(a){try{let l=[a,...loadAttempts().filter(x=>x.id!==a.id)].slice(0,15);
+  while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}catch(e){}}
+const fmtDate=t=>new Date(t).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(s.answers[i]===q.ans)c++}));return{c,n}};
+
+/* ---------- app ---------- */
+const app=document.getElementById('app');
+let level='mixed',run=null,tick=null;
+const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+
+function home(){
+  clearInterval(tick);run=null;document.onkeydown=null;
+  const atts=loadAttempts();
+  const total=SECTIONS.reduce((s,d)=>s+d.minutes,0);
+  app.innerHTML=`
+  <header class="hero">
+    <h1>Thi thử Cognitive Test</h1>
+    <p class="lead">Bốn phần giống đề tuyển dụng: số học, ngôn ngữ, trừu tượng và tư duy phản biện. Câu hỏi bằng tiếng Anh như đề thật, giải thích đáp án bằng tiếng Việt.</p>
+  </header>
+  <section class="sheet">
+    <h3>Mức độ</h3>
+    <div class="levels" role="group" aria-label="Mức độ">
+      ${Object.entries(LEVELS).map(([k,v])=>`<button data-lv="${k}" aria-pressed="${k===level}">${v}</button>`).join('')}
+    </div>
+    <p class="muted" style="margin:10px 0 18px;font-size:.95rem" id="lvnote"></p>
+    <table class="structure">
+      ${SECTIONS.map((d,i)=>`<tr><td class="n">${i+1}</td><td class="name">${d.name}<span class="vi">${d.vi}</span></td><td class="meta">${d.count} câu<br>${d.minutes} phút</td><td class="act"><button class="btn ghost small" data-practice="${d.key}">Luyện riêng</button></td></tr>`).join('')}
+    </table>
+    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button></div>
+  </section>
+  <section class="section-gap">
+    <h3 style="margin-bottom:8px">Quy định giống đề thật</h3>
+    <ul class="notes">
+      <li>Mỗi phần có đồng hồ riêng; hết giờ là tự chuyển sang phần tiếp theo.</li>
+      <li>Trả lời xong không quay lại câu trước được. Bỏ qua câu nào thì câu đó tính sai.</li>
+      <li>Được nghỉ giữa các phần, dùng giấy bút và máy tính cầm tay.</li>
+      <li>Phím tắt: 1–4 hoặc A–D để chọn, Enter để trả lời.</li>
+    </ul>
+  </section>
+  ${atts.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><button class="btn ghost small" id="allRes">Xem tất cả kết quả</button></div><table class="hist attempts">${atts.slice(0,5).map(a=>{const sc=scoreOf(a);return`<tr><td>${fmtDate(a.t)}</td><td>${esc(a.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[a.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%"><button class="btn ghost small" data-att="${a.id}">Xem</button></td></tr>`}).join('')}</table></section>`:''}
+  `;
+  const note=()=>{document.getElementById('lvnote').textContent={easy:'Một quy luật, phép tính một bước, đoạn văn ngắn rõ ràng.',medium:'Hai quy luật kết hợp, bảng số liệu, câu hỏi dễ nhầm giữa False và Cannot say.',hard:'Ba quy luật cùng lúc, tính nhiều bước, bẫy logic.',mixed:'Mỗi phần đi từ dễ đến khó, giống cách đề thật thường sắp xếp.'}[level]};
+  note();
+  app.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{level=b.dataset.lv;app.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b));note()});
+  app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
+  const ar=document.getElementById('allRes');if(ar)ar.onclick=attemptList;
+  document.getElementById('study').onclick=()=>studyView(level,'num');
+  document.getElementById('startFull').onclick=()=>start(SECTIONS.map(d=>({def:d,qs:build(d,level),secs:d.minutes*60})),'Thi thử đầy đủ');
+  app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>{const d=SECTIONS.find(x=>x.key===b.dataset.practice);start([{def:d,qs:build(d,level),secs:d.minutes*60}],'Luyện '+d.name)});
+}
+
+function start(sections,label){
+  run={label,level,sections:sections.map(s=>({...s,answers:new Array(s.qs.length).fill(null),times:new Array(s.qs.length).fill(null),used:0})),si:0,qi:0,sel:null};
+  intro();
+}
+function intro(){
+  clearInterval(tick);document.onkeydown=null;
+  const s=run.sections[run.si],multi=run.sections.length>1;
+  app.innerHTML=`
+  <div class="sheet" style="margin-top:20px">
+    ${multi?`<p class="muted">Phần ${run.si+1} / ${run.sections.length}</p>`:''}
+    <h2>${s.def.name}</h2>
+    <p class="muted" style="margin-top:4px">${s.def.vi}</p>
+    <p style="font-size:1.1rem;margin:18px 0 6px"><b>${s.qs.length} câu</b> trong <b>${mmss(s.secs)}</b> phút</p>
+    <p style="max-width:62ch">${s.def.tip}</p>
+    <div class="row" style="margin-top:20px"><button class="btn" id="go">Bắt đầu phần này</button>${run.si===0?`<button class="btn ghost" id="back">Về trang chính</button>`:''}</div>
+  </div>`;
+  document.getElementById('go').onclick=()=>{s.startAt=Date.now();s.endAt=s.startAt+s.secs*1000;run.qi=0;run.sel=null;question();tick=setInterval(updTimer,250)};
+  const b=document.getElementById('back');if(b)b.onclick=home;
+  document.getElementById('go').focus();
+}
+function updTimer(){
+  const s=run.sections[run.si],left=(s.endAt-Date.now())/1000,el=document.getElementById('timer');
+  if(el){el.textContent=mmss(left);el.classList.toggle('low',left<=60)}
+  if(left<=0)endSection();
+}
+function qHTML(q){
+  if(q.type==='abs')return`
+    <p class="qtext">Which figure comes next in the sequence?</p>
+    <div class="seq">${q.seq.map(s=>`<div class="panel">${panelSVG(s)}</div>`).join('')}<div class="panel q">?</div></div>
+    <div class="aopts" role="radiogroup" aria-label="Answer options">${q.opts.map((s,i)=>`<button class="aopt" role="radio" aria-checked="false" data-i="${i}" aria-label="Option ${'ABCD'[i]}"><span class="k">${'ABCD'[i]}</span><div class="panel">${panelSVG(s)}</div></button>`).join('')}</div>`;
+  let h='';
+  if(q.type==='verb')h+=`<div class="passage">${esc(q.passage)}</div><p class="stmt">${esc(q.statement)}</p>`;
+  else{h+=`<p class="qtext">${esc(q.q)}</p>`;if(q.table)h+=`<div class="tablewrap"><table class="data"><thead><tr>${q.table.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${q.table.rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+  h+=`<div class="opts" role="radiogroup" aria-label="Answer options">${q.opts.map((o,i)=>`<button class="opt" role="radio" aria-checked="false" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${esc(o)}</span></button>`).join('')}</div>`;
+  return h;
+}
+function question(){
+  const s=run.sections[run.si],q=s.qs[run.qi];run.sel=null;run.qStart=Date.now();
+  app.innerHTML=`
+  <div class="bar">
+    <div><div class="sec">${s.def.name}</div><div class="count">Câu ${run.qi+1} / ${s.qs.length}</div></div>
+    <div class="timer" id="timer" aria-label="Thời gian còn lại">${mmss((s.endAt-Date.now())/1000)}</div>
+  </div>
+  <div class="progress"><i style="width:${run.qi/s.qs.length*100}%"></i></div>
+  <div class="qbody">
+    <span class="tag">${LEVELS[q.level]}</span>
+    ${qHTML(q)}
+  </div>
+  <div class="foot">
+    <button class="btn ghost small" id="skip">Bỏ qua</button>
+    <span class="kbd">1–4 để chọn, Enter để trả lời</span>
+    <button class="btn" id="ok" disabled>Trả lời</button>
+  </div>`;
+  const btns=[...app.querySelectorAll('[role=radio]')];
+  const choose=i=>{if(i<0||i>=btns.length)return;run.sel=i;btns.forEach((b,j)=>b.setAttribute('aria-checked',j===i));document.getElementById('ok').disabled=false};
+  btns.forEach(b=>b.onclick=()=>choose(+b.dataset.i));
+  document.getElementById('ok').onclick=()=>answer(run.sel);
+  document.getElementById('skip').onclick=()=>answer(null);
+  document.onkeydown=e=>{
+    if(e.target.tagName==='INPUT')return;
+    const k=e.key.toLowerCase();
+    if('1234'.includes(k)&&k)choose(+k-1);
+    else if('abcd'.includes(k)&&k.length===1)choose('abcd'.indexOf(k));
+    else if(e.key==='Enter'&&run.sel!==null){e.preventDefault();answer(run.sel)}
+  };
+}
+function answer(i){
+  const s=run.sections[run.si];s.answers[run.qi]=i;s.times[run.qi]=Math.round((Date.now()-run.qStart)/100)/10;
+  if(run.qi<s.qs.length-1){run.qi++;question()}else endSection();
+}
+function endSection(){
+  clearInterval(tick);document.onkeydown=null;
+  const s=run.sections[run.si];s.used=Math.min(s.secs,(Date.now()-s.startAt)/1000);
+  if(run.si<run.sections.length-1){run.si++;intro()}else results();
+}
+function results(){
+  const a={id:String(Date.now()),t:Date.now(),label:run.label,level:run.level,
+    sections:run.sections.map(s=>({key:s.def.key,secs:s.secs,used:Math.round(s.used),qs:s.qs,answers:s.answers,times:s.times}))};
+  saveAttempt(a);showAttempt(a);
+}
+const TIPS={
+  num:'Đọc câu hỏi trước rồi mới tìm số liệu. % thay đổi luôn chia cho giá trị ban đầu; tăng rồi giảm thì nhân hệ số.',
+  verb:'Chỉ dựa vào đoạn văn. Câu có từ tuyệt đối (all, always, only) trong khi đoạn văn chỉ nói chừng mực (some, may) thì thường không phải True.',
+  abs:'Kiểm tra từng yếu tố một: xoay, số cạnh, tô màu, số chấm, vị trí. Mỗi quy luật tìm được loại bớt phương án.',
+  crit:'Đáp án phải đúng trong mọi trường hợp. Với "nếu P thì Q": thấy Q không suy ra được P, không có P cũng không suy ra được không có Q.'};
+const secDef=k=>SECTIONS.find(d=>d.key===k);
+const status=(s,i)=>{const a=s.answers[i];return a===null?'skip':a===s.qs[i].ans?'ok':'bad'};
+function attemptList(){
+  clearInterval(tick);document.onkeydown=null;
+  const atts=loadAttempts();
+  app.innerHTML=`<header class="hero"><h1 style="font-size:clamp(2rem,5vw,2.8rem)">Kết quả của bạn</h1><p class="lead">Lưu 15 lần làm gần nhất trên trình duyệt này.</p></header>
+  ${atts.length?`<div class="sheet"><table class="hist attempts">${atts.map(a=>{const sc=scoreOf(a);return`<tr><td>${fmtDate(a.t)}</td><td>${esc(a.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[a.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b><br><span class="muted" style="font-size:.88rem">${Math.round(sc.c/sc.n*100)}%</span></td><td style="text-align:right;width:1%"><button class="btn ghost small" data-att="${a.id}">Xem</button></td></tr>`}).join('')}</table></div>`
+  :`<p class="empty">Chưa có lần làm nào. Làm một bài thi thử để xem kết quả tại đây.</p>`}
+  <div class="row section-gap"><button class="btn" id="homeBtn">Về trang chính</button></div>`;
+  app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>showAttempt(atts.find(x=>x.id===b.dataset.att)));
+  document.getElementById('homeBtn').onclick=home;window.scrollTo(0,0);
+}
+function showAttempt(att){
+  clearInterval(tick);document.onkeydown=null;run=null;
+  const view={sec:'all',filter:'all'};
+  const sc=scoreOf(att),pct=Math.round(sc.c/sc.n*100);
+  const lvStats={easy:[0,0],medium:[0,0],hard:[0,0]};let skipped=0,timedOut=0;
+  att.sections.forEach(s=>s.qs.forEach((q,i)=>{lvStats[q.level][1]++;if(s.answers[i]===q.ans)lvStats[q.level][0]++;if(s.answers[i]===null){skipped++;if(s.times[i]===null)timedOut++}}));
+  const used=att.sections.reduce((a,s)=>a+s.used,0),total=att.sections.reduce((a,s)=>a+s.secs,0);
+  app.innerHTML=`
+  <header class="hero">
+    <p class="muted">${esc(att.label)} · ${LEVELS[att.level]} · ${fmtDate(att.t)}</p>
+    <div class="score">${sc.c}<span style="font-size:.45em;color:var(--muted)">/${sc.n}</span></div>
+    <p class="lead">Đúng ${pct}% số câu.${timedOut?` ${timedOut} câu chưa kịp làm vì hết giờ.`:''}</p>
+  </header>
+  <section class="sheet">
+    ${att.sections.map(s=>{const d=secDef(s.key),c=s.qs.filter((q,i)=>s.answers[i]===q.ans).length,tt=s.times.filter(x=>x!==null),avg=tt.length?Math.round(tt.reduce((a,b)=>a+b,0)/tt.length):0;
+      return`<div class="secres"><b>${d.name}</b><span style="font-variant-numeric:tabular-nums">${c}/${s.qs.length}</span><div class="meter"><i style="width:${c/s.qs.length*100}%"></i></div><span class="muted" style="font-size:.9rem;grid-column:1/-1">Dùng ${mmss(s.used)} / ${mmss(s.secs)} · trung bình ${avg} giây mỗi câu (gợi ý: ${Math.round(s.secs/s.qs.length)} giây)</span></div>`}).join('')}
+    <div class="statgrid">
+      ${['easy','medium','hard'].filter(l=>lvStats[l][1]).map(l=>`<div class="stat"><b>${lvStats[l][0]}/${lvStats[l][1]}</b><span>Câu ${LEVELS[l].toLowerCase()}</span></div>`).join('')}
+      <div class="stat"><b>${skipped}</b><span>Chưa trả lời</span></div>
+      <div class="stat"><b>${mmss(used)}</b><span>Tổng thời gian / ${mmss(total)}</span></div>
+    </div>
+    <div class="row" style="margin-top:20px"><button class="btn" id="again">Làm đề mới cùng cấu trúc</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Các lần làm khác</button></div>
+  </section>
+  <div class="controls">
+    <div class="chips" role="group" aria-label="Chọn phần">${att.sections.length>1?`<button data-sec="all" aria-pressed="true">Tất cả phần</button>`:''}${att.sections.map((s,k)=>`<button data-sec="${s.key}" aria-pressed="${att.sections.length===1}">${secDef(s.key).name}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Lọc câu">${[['all','Tất cả'],['bad','Sai'],['skip','Chưa trả lời'],['ok','Đúng']].map(([k,v])=>`<button data-f="${k}" aria-pressed="${k==='all'}">${v}</button>`).join('')}</div>
+  </div>
+  <div id="list"></div>`;
+  if(att.sections.length===1)view.sec=att.sections[0].key;
+  const opt=(q,a,j,inner)=>`<li class="${j===q.ans?'is-ans':''} ${j===a&&j!==q.ans?'is-wrong':''}"><span class="k">${'ABCD'[j]}</span>${inner}${j===q.ans?'<em>Đáp án đúng</em>':j===a?'<em>Bạn chọn</em>':''}</li>`;
+  const card=(s,i)=>{
+    const q=s.qs[i],a=s.answers[i],st=status(s,i),t=s.times[i];
+    const resTxt=st==='ok'?'Đúng':st==='bad'?'Sai':(t===null?'Hết giờ, chưa làm':'Bỏ qua');
+    let body='';
+    if(q.type==='abs')body=`<p style="margin-bottom:8px"><b>Which figure comes next?</b></p><div class="mini"><div class="seq">${q.seq.map(x=>`<div class="panel">${panelSVG(x)}</div>`).join('')}<div class="panel q">?</div></div></div>
+      <ul class="ro abs">${q.opts.map((o,j)=>opt(q,a,j,`<div class="panel">${panelSVG(o)}</div>`)).join('')}</ul>`;
+    else{
+      if(q.type==='verb')body=`<div class="mini"><div class="passage">${esc(q.passage)}</div></div><p style="margin:0"><b>${esc(q.statement)}</b></p>`;
+      else body=`<p style="margin:0"><b>${esc(q.q)}</b></p>`+(q.table?`<div class="tablewrap" style="margin-top:10px"><table class="data"><thead><tr>${q.table.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${q.table.rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'');
+      body+=`<ul class="ro">${q.opts.map((o,j)=>opt(q,a,j,`<span>${esc(o)}</span>`)).join('')}</ul>`;
+    }
+    return`<article class="qcard st-${st}" id="q-${s.key}-${i}">
+      <div class="qhead"><span>${secDef(s.key).name} · Câu ${i+1} · ${LEVELS[q.level]}${t!==null?` · ${t} giây`:''}</span><span class="res ${st}">${resTxt}</span></div>
+      ${body}
+      <div class="why"><p><b>Giải thích:</b> ${esc(q.exp)}</p>${st!=='ok'?`<p class="tip">Mẹo: ${TIPS[s.key]}</p>`:''}</div>
+    </article>`;
+  };
+  const draw=()=>{
+    const secs=att.sections.filter(s=>view.sec==='all'||s.key===view.sec);
+    let html='',count=0;
+    for(const s of secs){
+      const idx=s.qs.map((_,i)=>i).filter(i=>view.filter==='all'||status(s,i)===view.filter);
+      html+=`<h3 style="margin-top:22px">${secDef(s.key).name}</h3>
+        <div class="navgrid" aria-label="Danh sách câu">${s.qs.map((_,i)=>`<button class="st-${status(s,i)}" data-go="q-${s.key}-${i}" aria-label="Câu ${i+1}">${i+1}</button>`).join('')}</div>`;
+      html+=idx.length?idx.map(i=>card(s,i)).join(''):`<p class="empty">Không có câu nào khớp bộ lọc này.</p>`;
+      count+=idx.length;
+    }
+    const list=document.getElementById('list');list.innerHTML=html;
+    list.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{let el=document.getElementById(b.dataset.go);
+      if(!el){view.filter='all';app.querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.f==='all'));draw();el=document.getElementById(b.dataset.go)}
+      el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
+  };
+  app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{view.sec=b.dataset.sec;app.querySelectorAll('[data-sec]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()});
+  app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{view.filter=b.dataset.f;app.querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()});
+  draw();
+  document.getElementById('again').onclick=()=>{level=att.level;start(SECTIONS.filter(d=>att.sections.some(s=>s.key===d.key)).map(d=>({def:d,qs:build(d,att.level),secs:d.minutes*60})),att.label)};
+  document.getElementById('homeBtn').onclick=home;
+  document.getElementById('listBtn').onclick=attemptList;
+  window.scrollTo(0,0);
+}
+function studyView(lv,secKey){
+  clearInterval(tick);document.onkeydown=null;run=null;level=lv;
+  const d=secDef(secKey),qs=build(d,lv);
+  app.innerHTML=`
+  <header class="hero" style="padding-bottom:10px">
+    <h1 style="font-size:clamp(2rem,5vw,2.8rem)">Xem đề và đáp án</h1>
+    <p class="lead">Đọc nhanh đề, đáp án đúng và giải thích, không tính giờ và không chấm điểm. Bấm "Đề khác" để xem bộ câu mới.</p>
+  </header>
+  <div class="controls" style="margin-top:6px">
+    <div class="chips" role="group" aria-label="Chọn phần">${SECTIONS.map(s=>`<button data-sec="${s.key}" aria-pressed="${s.key===secKey}">${s.name}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Mức độ">${Object.entries(LEVELS).map(([k,v])=>`<button data-lv="${k}" aria-pressed="${k===lv}">${v}</button>`).join('')}</div>
+  </div>
+  <p class="muted" style="margin:14px 0 0">${d.name}: ${d.count} câu, ${d.minutes} phút khi thi thật. ${TIPS[secKey]}</p>
+  <div id="list">${qs.map((q,i)=>{
+    const ans=j=>j===q.ans?' class="is-ans"':'',em=j=>j===q.ans?'<em>Đáp án đúng</em>':'';
+    let body;
+    if(q.type==='abs')body=`<div class="mini"><div class="seq">${q.seq.map(x=>`<div class="panel">${panelSVG(x)}</div>`).join('')}<div class="panel q">?</div></div></div><ul class="ro abs">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${em(j)}</li>`).join('')}</ul>`;
+    else{
+      body=q.type==='verb'?`<div class="mini"><div class="passage">${esc(q.passage)}</div></div><p style="margin:0"><b>${esc(q.statement)}</b></p>`:`<p style="margin:0"><b>${esc(q.q)}</b></p>`+(q.table?`<div class="tablewrap" style="margin-top:10px"><table class="data"><thead><tr>${q.table.head.map(x=>`<th>${esc(x)}</th>`).join('')}</tr></thead><tbody>${q.table.rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'');
+      body+=`<ul class="ro">${q.opts.map((o,j)=>`<li${ans(j)}><span class="k">${'ABCD'[j]}</span><span>${esc(o)}</span>${em(j)}</li>`).join('')}</ul>`;
+    }
+    return`<article class="qcard st-ok"><div class="qhead"><span>Câu ${i+1} · ${LEVELS[q.level]}</span><span class="res ok">Đáp án: ${'ABCD'[q.ans]}</span></div>${body}<div class="why"><p><b>Giải thích:</b> ${esc(q.exp)}</p></div></article>`;
+  }).join('')}</div>
+  <div class="row section-gap"><button class="btn" id="more">Đề khác</button><button class="btn ghost" id="try">Làm thử phần này</button><button class="btn ghost" id="homeBtn">Về trang chính</button></div>`;
+  app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>studyView(lv,b.dataset.sec));
+  app.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>studyView(b.dataset.lv,secKey));
+  document.getElementById('more').onclick=()=>studyView(lv,secKey);
+  document.getElementById('try').onclick=()=>start([{def:d,qs:build(d,lv),secs:d.minutes*60}],'Luyện '+d.name);
+  document.getElementById('homeBtn').onclick=home;
+  window.scrollTo(0,0);
+}
+home();
+</script>
+</body>
+</html>
