@@ -174,6 +174,12 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .secmini{font-size:.86rem; color:var(--muted); font-variant-numeric:tabular-nums}
 .hist .acts{white-space:nowrap; text-align:right; width:1%}
 .hist .acts .btn + .btn{margin-left:6px}
+.namefield{display:grid; gap:6px; margin-bottom:18px; max-width:380px}
+.namefield span{font-weight:700; color:var(--ink)}
+.namefield input{font:inherit; color:var(--text); background:var(--card); border:2px solid var(--line); border-radius:10px; padding:10px 12px}
+.namefield input:focus{outline:none; border-color:var(--ink)}
+.namefield input[aria-invalid="true"]{border-color:var(--bad)}
+.namefield .err{color:var(--bad); font-size:.92rem}
 .btn.danger{border-color:var(--bad); color:var(--bad)}
 @media (max-width:560px){.trends{grid-template-columns:minmax(0,1fr)} .hist .secmini{display:none} .hist td{font-size:.9rem} .hist .acts .btn{display:block; width:100%; padding:6px 10px} .hist .acts .btn + .btn{margin:6px 0 0}}
 .attempts td{padding:9px 4px; border-bottom:1px dashed var(--line); vertical-align:middle}
@@ -485,7 +491,7 @@ function saveAttempt(a){try{let l=[a,...loadAttempts().filter(x=>x.id!==a.id)].s
   while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}catch(e){}}
 /* Lịch sử gọn: chỉ lưu điểm từng phần nên giữ được nhiều lần làm hơn bản chi tiết ở trên. */
 const HKEY='cogmock.history',HMAX=500;
-const summarize=a=>({id:a.id,t:a.t,label:a.label,level:a.level,
+const summarize=a=>({id:a.id,t:a.t,name:a.name||'',label:a.label,level:a.level,
   secs:a.sections.map(s=>({key:s.key,c:s.qs.filter((q,i)=>s.answers[i]===q.ans).length,n:s.qs.length,used:s.used,secs:s.secs}))});
 function saveHistory(h){try{localStorage.setItem(HKEY,JSON.stringify(h.sort((a,b)=>b.t-a.t).slice(0,HMAX)))}catch(e){}}
 function loadHistory(){
@@ -501,8 +507,11 @@ const pctOf=(c,n)=>n?Math.round(c/n*100):0;
 function cleanEntry(e){
   if(!e||typeof e!=='object'||!Array.isArray(e.secs)||!Number.isFinite(+e.t))return null;
   const secs=e.secs.filter(s=>s&&SECTIONS.some(d=>d.key===s.key)).map(s=>({key:s.key,c:Math.max(0,+s.c|0),n:Math.max(0,+s.n|0),used:+s.used||0,secs:+s.secs||0})).filter(s=>s.n);
-  return secs.length?{id:String(e.id||e.t),t:+e.t,label:String(e.label||'Bài làm'),level:LEVELS[e.level]?e.level:'mixed',secs}:null;
+  return secs.length?{id:String(e.id||e.t),t:+e.t,name:String(e.name||'').slice(0,40),label:String(e.label||'Bài làm'),level:LEVELS[e.level]?e.level:'mixed',secs}:null;
 }
+const NKEY='cogmock.name';
+function getName(){try{return(localStorage.getItem(NKEY)||'').trim()}catch(e){return''}}
+function setName(n){try{localStorage.setItem(NKEY,n.trim().slice(0,40))}catch(e){}}
 const fmtDate=t=>new Date(t).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(s.answers[i]===q.ans)c++}));return{c,n}};
 
@@ -521,6 +530,9 @@ function home(){
     <p class="lead">Bốn phần giống đề tuyển dụng: số học, ngôn ngữ, trừu tượng và tư duy phản biện. Câu hỏi bằng tiếng Anh như đề thật, giải thích đáp án bằng tiếng Việt.</p>
   </header>
   <section class="sheet">
+    <label class="namefield"><span>Tên người làm bài</span>
+      <input id="who" maxlength="40" autocomplete="name" placeholder="Ví dụ: Nguyễn Văn An" value="${esc(getName())}" aria-describedby="whoErr">
+      <span class="err" id="whoErr" hidden>Nhập tên trước khi bắt đầu để lưu vào lịch sử.</span></label>
     <h3>Mức độ</h3>
     <div class="levels" role="group" aria-label="Mức độ">
       ${Object.entries(LEVELS).map(([k,v])=>`<button data-lv="${k}" aria-pressed="${k===level}">${v}</button>`).join('')}
@@ -540,7 +552,7 @@ function home(){
       <li>Phím tắt: 1–4 hoặc A–D để chọn, Enter để trả lời.</li>
     </ul>
   </section>
-  ${hist.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><button class="btn ghost small" id="allRes">Xem lịch sử (${hist.length})</button></div><table class="hist attempts">${hist.slice(0,5).map(e=>{const sc=hScore(e);return`<tr><td>${fmtDate(e.t)}</td><td>${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}</td></tr>`}).join('')}</table></section>`:''}
+  ${hist.length?`<section class="section-gap"><div class="row" style="justify-content:space-between"><h3>Lần làm gần đây</h3><button class="btn ghost small" id="allRes">Xem lịch sử (${hist.length})</button></div><table class="hist attempts">${hist.slice(0,5).map(e=>{const sc=hScore(e);return`<tr><td>${fmtDate(e.t)}</td><td>${e.name?`<b>${esc(e.name)}</b> · `:''}${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span></td><td style="text-align:right"><b>${sc.c}/${sc.n}</b></td><td style="text-align:right;width:1%">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}</td></tr>`}).join('')}</table></section>`:''}
   `;
   const note=()=>{document.getElementById('lvnote').textContent={easy:'Một quy luật, phép tính một bước, đoạn văn ngắn rõ ràng.',medium:'Hai quy luật kết hợp, bảng số liệu, câu hỏi dễ nhầm giữa False và Cannot say.',hard:'Ba quy luật cùng lúc, tính nhiều bước, bẫy logic.',mixed:'Mỗi phần đi từ dễ đến khó, giống cách đề thật thường sắp xếp.'}[level]};
   note();
@@ -548,13 +560,22 @@ function home(){
   app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
   const ar=document.getElementById('allRes');if(ar)ar.onclick=historyView;
   document.getElementById('histBtn').onclick=historyView;
+  const who=document.getElementById('who');
+  who.oninput=()=>{setName(who.value);if(who.value.trim()){who.removeAttribute('aria-invalid');document.getElementById('whoErr').hidden=true}};
   document.getElementById('study').onclick=()=>studyView(level,'num');
   document.getElementById('startFull').onclick=()=>start(SECTIONS.map(d=>({def:d,qs:build(d,level),secs:d.minutes*60})),'Thi thử đầy đủ');
   app.querySelectorAll('[data-practice]').forEach(b=>b.onclick=()=>{const d=SECTIONS.find(x=>x.key===b.dataset.practice);start([{def:d,qs:build(d,level),secs:d.minutes*60}],'Luyện '+d.name)});
 }
 
+function askName(){
+  const w=document.getElementById('who');if(!w)return;
+  w.setAttribute('aria-invalid','true');document.getElementById('whoErr').hidden=false;
+  w.scrollIntoView({block:'center'});w.focus();
+}
 function start(sections,label){
-  run={label,level,sections:sections.map(s=>({...s,answers:new Array(s.qs.length).fill(null),times:new Array(s.qs.length).fill(null),used:0})),si:0,qi:0,sel:null};
+  const name=getName();
+  if(!name){home();askName();return}
+  run={name,label,level,sections:sections.map(s=>({...s,answers:new Array(s.qs.length).fill(null),times:new Array(s.qs.length).fill(null),used:0})),si:0,qi:0,sel:null};
   intro();
 }
 function intro(){
@@ -562,7 +583,7 @@ function intro(){
   const s=run.sections[run.si],multi=run.sections.length>1;
   app.innerHTML=`
   <div class="sheet" style="margin-top:20px">
-    ${multi?`<p class="muted">Phần ${run.si+1} / ${run.sections.length}</p>`:''}
+    <p class="muted">${esc(run.name)}${multi?` · Phần ${run.si+1} / ${run.sections.length}`:''}</p>
     <h2>${s.def.name}</h2>
     <p class="muted" style="margin-top:4px">${s.def.vi}</p>
     <p style="font-size:1.1rem;margin:18px 0 6px"><b>${s.qs.length} câu</b> trong <b>${mmss(s.secs)}</b> phút</p>
@@ -629,7 +650,7 @@ function endSection(){
   if(run.si<run.sections.length-1){run.si++;intro()}else results();
 }
 function results(){
-  const a={id:String(Date.now()),t:Date.now(),label:run.label,level:run.level,
+  const a={id:String(Date.now()),t:Date.now(),name:run.name,label:run.label,level:run.level,
     sections:run.sections.map(s=>({key:s.def.key,secs:s.secs,used:Math.round(s.used),qs:s.qs,answers:s.answers,times:s.times}))};
   addHistory(summarize(a));saveAttempt(a);showAttempt(a);
 }
@@ -646,10 +667,12 @@ function spark(v){
 }
 function historyView(){
   clearInterval(tick);document.onkeydown=null;run=null;
-  const view={sec:'all',lv:'all'};
+  const view={sec:'all',lv:'all',who:'all'};
   const render=()=>{
     const all=loadHistory(),detail=new Set(loadAttempts().map(a=>a.id));
-    const byLv=all.filter(e=>view.lv==='all'||e.level===view.lv);
+    const names=[...new Set(all.map(e=>e.name||''))].sort((a,b)=>a.localeCompare(b,'vi'));
+    if(view.who!=='all'&&!names.includes(view.who))view.who='all';
+    const byLv=all.filter(e=>(view.lv==='all'||e.level===view.lv)&&(view.who==='all'||(e.name||'')===view.who));
     const rows=byLv.filter(e=>view.sec==='all'||e.secs.some(s=>s.key===view.sec));
     const sc=e=>view.sec==='all'?hScore(e):e.secs.find(s=>s.key===view.sec);
     const tot=rows.reduce((a,e)=>{const s=sc(e);return{c:a.c+s.c,n:a.n+s.n}},{c:0,n:0});
@@ -666,6 +689,7 @@ function historyView(){
       <p class="lead">Lưu tối đa ${HMAX} lần làm trên trình duyệt này. Xem lại chi tiết từng câu được với ${15} lần gần nhất.</p></header>
     <div class="controls" style="margin-top:0">
       <div class="chips" role="group" aria-label="Chọn phần"><button data-sec="all" aria-pressed="${view.sec==='all'}">Tất cả phần</button>${SECTIONS.map(d=>`<button data-sec="${d.key}" aria-pressed="${view.sec===d.key}">${d.name}</button>`).join('')}</div>
+      ${names.length>1?`<div class="chips" role="group" aria-label="Người làm"><button data-who="all" aria-pressed="${view.who==='all'}">Mọi người</button>${names.map((n,i)=>`<button data-who="${i}" aria-pressed="${view.who===n}">${n?esc(n):'Chưa có tên'}</button>`).join('')}</div>`:''}
       <div class="chips" role="group" aria-label="Mức độ"><button data-hl="all" aria-pressed="${view.lv==='all'}">Mọi mức độ</button>${Object.entries(LEVELS).map(([k,v])=>`<button data-hl="${k}" aria-pressed="${view.lv===k}">${v}</button>`).join('')}</div>
     </div>
     ${rows.length?`
@@ -682,7 +706,7 @@ function historyView(){
     </section>
     <section class="sheet section-gap"><table class="hist attempts">${rows.map(e=>{const s=sc(e);return`<tr>
       <td>${fmtDate(e.t)}</td>
-      <td>${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span>${e.secs.length>1?`<br><span class="secmini">${e.secs.map(x=>`${secDef(x.key).name.split(' ')[0]} ${x.c}/${x.n}`).join(' · ')}</span>`:''}</td>
+      <td>${e.name?`<b>${esc(e.name)}</b><br>`:''}${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span>${e.secs.length>1?`<br><span class="secmini">${e.secs.map(x=>`${secDef(x.key).name.split(' ')[0]} ${x.c}/${x.n}`).join(' · ')}</span>`:''}</td>
       <td style="text-align:right"><b>${s.c}/${s.n}</b><br><span class="muted" style="font-size:.88rem">${pctOf(s.c,s.n)}%</span></td>
       <td class="acts">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}<button class="btn ghost small danger" data-del="${esc(e.id)}" aria-label="Xóa lần làm ${esc(fmtDate(e.t))}">Xóa</button></td>
     </tr>`}).join('')}</table></section>`
@@ -696,6 +720,7 @@ function historyView(){
     </div>`;
     app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{view.sec=b.dataset.sec;render()});
     app.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{view.lv=b.dataset.hl;render()});
+    app.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{view.who=b.dataset.who==='all'?'all':names[+b.dataset.who];render()});
     app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
     app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Xóa lần làm này khỏi lịch sử?')){removeHistory(b.dataset.del);render()}});
     document.getElementById('homeBtn').onclick=home;
@@ -729,7 +754,7 @@ function showAttempt(att){
   const used=att.sections.reduce((a,s)=>a+s.used,0),total=att.sections.reduce((a,s)=>a+s.secs,0);
   app.innerHTML=`
   <header class="hero">
-    <p class="muted">${esc(att.label)} · ${LEVELS[att.level]} · ${fmtDate(att.t)}</p>
+    <p class="muted">${att.name?`<b>${esc(att.name)}</b> · `:''}${esc(att.label)} · ${LEVELS[att.level]} · ${fmtDate(att.t)}</p>
     <div class="score">${sc.c}<span style="font-size:.45em;color:var(--muted)">/${sc.n}</span></div>
     <p class="lead">Đúng ${pct}% số câu.${timedOut?` ${timedOut} câu chưa kịp làm vì hết giờ.`:''}</p>
   </header>
