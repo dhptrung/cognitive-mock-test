@@ -4,7 +4,15 @@ Trang thi thử Cognitive Test gồm 4 phần: Numerical (12 câu/10 phút), Ver
 
 Trang tĩnh, chỉ gồm `index.html`, không cần build hay backend.
 
-Lịch sử làm bài lưu trong `localStorage` của trình duyệt: tối đa 500 lần làm (điểm từng phần, thời gian), trong đó 15 lần gần nhất giữ đủ chi tiết từng câu để xem lại. Mỗi lần làm ghi kèm tên người làm bài (nhập ở trang chính, trình duyệt tự nhớ). Trang Lịch sử có biểu đồ tiến bộ theo từng phần, lọc theo phần/người làm/mức độ, xóa, và xuất/nhập file JSON để chuyển sang máy khác.
+Tính năng:
+
+- Ghi tên người làm bài (nhập ở trang chính, trình duyệt tự nhớ).
+- Tạm dừng và làm tiếp: bài đang làm được lưu sau mỗi câu, tải lại trang hoặc đóng tab vẫn làm tiếp được; đồng hồ dừng trong lúc rời đi.
+- Nộp bài sớm để xem kết quả ngay; câu chưa làm tính là sai.
+- Lịch sử: tối đa 500 lần làm, mỗi lần lưu đủ đề, đáp án đã chọn và thời gian từng câu để xem lại hoặc làm lại đúng đề đó. Có biểu đồ tiến bộ theo từng phần, lọc theo phần/người làm/mức độ, xóa, xuất/nhập file JSON.
+- Ôn câu sai: gom các câu làm sai hoặc chưa làm thành một đề riêng; ôn đúng câu nào thì câu đó rời khỏi danh sách.
+
+Dữ liệu chỉ lưu trên trình duyệt (tóm tắt trong `localStorage`, chi tiết trong IndexedDB), không gửi lên server. Xóa dữ liệu trình duyệt là mất lịch sử, trừ khi đã xuất file.
 
 - Chạy thử trên máy: mở `index.html` bằng trình duyệt.
 - Deploy: import repo này vào Vercel, Framework Preset chọn "Other", không cần Build Command.

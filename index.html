@@ -180,8 +180,11 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .namefield input:focus{outline:none; border-color:var(--ink)}
 .namefield input[aria-invalid="true"]{border-color:var(--bad)}
 .namefield .err{color:var(--bad); font-size:.92rem}
+.sheet.resume{border:2px solid var(--ink); margin-bottom:18px}
+.sheet.resume h3{margin-bottom:4px}
 .btn.danger{border-color:var(--bad); color:var(--bad)}
 @media (max-width:560px){.trends{grid-template-columns:minmax(0,1fr)} .hist .secmini{display:none} .hist td{font-size:.9rem} .hist .acts .btn{display:block; width:100%; padding:6px 10px} .hist .acts .btn + .btn{margin:6px 0 0}}
+@media (max-width:560px){.foot{flex-wrap:wrap} .foot .kbd{display:none} .foot #ok{flex:1 0 100%; order:-1}}
 .attempts td{padding:9px 4px; border-bottom:1px dashed var(--line); vertical-align:middle}
 @media (max-width:560px){.statgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){
@@ -485,13 +488,37 @@ function build(def,level){
 }
 
 /* ---------- storage ---------- */
-const AKEY='cogmock.attempts';
-function loadAttempts(){try{return JSON.parse(localStorage.getItem(AKEY))||[]}catch(e){return[]}}
-function saveAttempt(a){try{let l=[a,...loadAttempts().filter(x=>x.id!==a.id)].slice(0,15);
-  while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}catch(e){}}
+const AKEY='cogmock.attempts',HMAX=500;
+/* Chi tiết từng bài (đề, đáp án, thời gian) nằm trong IndexedDB vì localStorage chỉ chứa được vài bài.
+   ATT là bản sao trong bộ nhớ; ghi xuống IndexedDB chạy nền. Trình duyệt không có IndexedDB thì quay về localStorage. */
+let ATT=[],useIDB=false,dbP=null;
+function idb(mode,fn){
+  dbP=dbP||new Promise((res,rej)=>{const r=indexedDB.open('cogmock',1);r.onupgradeneeded=()=>r.result.createObjectStore('attempts',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+  return dbP.then(db=>new Promise((res,rej)=>{const t=db.transaction('attempts',mode),q=fn(t.objectStore('attempts'));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)}));
+}
+function lsAttempts(){try{return JSON.parse(localStorage.getItem(AKEY))||[]}catch(e){return[]}}
+function lsSave(){let l=ATT.slice(0,15);while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}
+async function initAttempts(){
+  const legacy=lsAttempts();
+  try{
+    if(!window.indexedDB)throw 0;
+    if(legacy.length)await idb('readwrite',st=>{legacy.forEach(a=>st.put(a))});
+    ATT=await idb('readonly',st=>st.getAll());useIDB=true;
+    if(legacy.length)try{localStorage.removeItem(AKEY)}catch(e){}
+  }catch(e){ATT=legacy;useIDB=false}
+  ATT.sort((a,b)=>b.t-a.t);
+}
+function loadAttempts(){return ATT}
+function saveAttempt(a){
+  ATT=[a,...ATT.filter(x=>x.id!==a.id)].sort((x,y)=>y.t-x.t);
+  const drop=ATT.slice(HMAX);ATT=ATT.slice(0,HMAX);
+  if(useIDB)idb('readwrite',st=>{st.put(a);drop.forEach(x=>st.delete(x.id))}).catch(()=>{});else lsSave();
+}
+function deleteAttempt(id){ATT=ATT.filter(x=>x.id!==id);if(useIDB)idb('readwrite',st=>{st.delete(id)}).catch(()=>{});else lsSave()}
+function clearAttempts(){ATT=[];if(useIDB)idb('readwrite',st=>{st.clear()}).catch(()=>{});try{localStorage.removeItem(AKEY)}catch(e){}}
 /* Lịch sử gọn: chỉ lưu điểm từng phần nên giữ được nhiều lần làm hơn bản chi tiết ở trên. */
-const HKEY='cogmock.history',HMAX=500;
-const summarize=a=>({id:a.id,t:a.t,name:a.name||'',label:a.label,level:a.level,
+const HKEY='cogmock.history';
+const summarize=a=>({id:a.id,t:a.t,name:a.name||'',kind:a.kind||'test',early:!!a.early,label:a.label,level:a.level,
   secs:a.sections.map(s=>({key:s.key,c:s.qs.filter((q,i)=>s.answers[i]===q.ans).length,n:s.qs.length,used:s.used,secs:s.secs}))});
 function saveHistory(h){try{localStorage.setItem(HKEY,JSON.stringify(h.sort((a,b)=>b.t-a.t).slice(0,HMAX)))}catch(e){}}
 function loadHistory(){
@@ -500,18 +527,40 @@ function loadHistory(){
   const h=loadAttempts().map(summarize);saveHistory(h);return h;
 }
 function addHistory(e){saveHistory([e,...loadHistory().filter(x=>x.id!==e.id)])}
-function removeHistory(id){saveHistory(loadHistory().filter(x=>x.id!==id));try{localStorage.setItem(AKEY,JSON.stringify(loadAttempts().filter(x=>x.id!==id)))}catch(e){}}
-function clearHistory(){try{localStorage.removeItem(AKEY);localStorage.setItem(HKEY,'[]')}catch(e){}}
+function removeHistory(id){saveHistory(loadHistory().filter(x=>x.id!==id));deleteAttempt(id)}
+function clearHistory(){clearAttempts();try{localStorage.setItem(HKEY,'[]')}catch(e){}}
 const hScore=e=>e.secs.reduce((a,s)=>({c:a.c+s.c,n:a.n+s.n}),{c:0,n:0});
 const pctOf=(c,n)=>n?Math.round(c/n*100):0;
 function cleanEntry(e){
   if(!e||typeof e!=='object'||!Array.isArray(e.secs)||!Number.isFinite(+e.t))return null;
   const secs=e.secs.filter(s=>s&&SECTIONS.some(d=>d.key===s.key)).map(s=>({key:s.key,c:Math.max(0,+s.c|0),n:Math.max(0,+s.n|0),used:+s.used||0,secs:+s.secs||0})).filter(s=>s.n);
-  return secs.length?{id:String(e.id||e.t),t:+e.t,name:String(e.name||'').slice(0,40),label:String(e.label||'Bài làm'),level:LEVELS[e.level]?e.level:'mixed',secs}:null;
+  return secs.length?{id:String(e.id||e.t),t:+e.t,kind:e.kind==='review'?'review':'test',early:!!e.early,name:String(e.name||'').slice(0,40),label:String(e.label||'Bài làm'),level:LEVELS[e.level]?e.level:'mixed',secs}:null;
 }
 const NKEY='cogmock.name';
 function getName(){try{return(localStorage.getItem(NKEY)||'').trim()}catch(e){return''}}
 function setName(n){try{localStorage.setItem(NKEY,n.trim().slice(0,40))}catch(e){}}
+/* Bài đang làm dở: lưu sau mỗi câu và định kỳ, để tải lại trang vẫn làm tiếp được. */
+const RKEY='cogmock.run';let lastRunSave=0;
+function saveRun(){
+  if(!run)return;lastRunSave=Date.now();
+  const s=run.sections[run.si];if(run.phase==='question')s.left=Math.max(0,s.endAt-Date.now());
+  try{localStorage.setItem(RKEY,JSON.stringify({...run,sel:null,savedAt:Date.now(),sections:run.sections.map(x=>({...x,def:undefined,key:x.def.key}))}))}catch(e){}
+}
+function loadRun(){
+  try{const r=JSON.parse(localStorage.getItem(RKEY));if(!r||!Array.isArray(r.sections))return null;
+    r.sections.forEach(x=>x.def=secDef(x.key));return r.sections.every(x=>x.def)?r:null}catch(e){return null}
+}
+function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
+addEventListener('pagehide',saveRun);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveRun()});
+
+/* Câu sai: lấy lần gặp gần nhất của mỗi câu trong các bài còn chi tiết; ôn đúng rồi thì câu tự rời khỏi danh sách. */
+const qKey=q=>q.type+'|'+(q.type==='abs'?JSON.stringify([q.seq,q.opts]):q.type==='verb'?q.passage+'|'+q.statement:q.q);
+function wrongPool(atts){
+  const last=new Map();
+  [...atts].sort((a,b)=>a.t-b.t).forEach(a=>a.sections.forEach(s=>s.qs.forEach((q,i)=>last.set(qKey(q),{key:s.key,q,ok:s.answers[i]===q.ans}))));
+  return[...last.values()].filter(x=>!x.ok);
+}
 const fmtDate=t=>new Date(t).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(s.answers[i]===q.ans)c++}));return{c,n}};
 
@@ -522,13 +571,18 @@ const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padSta
 
 function home(){
   clearInterval(tick);run=null;document.onkeydown=null;
-  const hist=loadHistory(),detail=new Set(loadAttempts().map(a=>a.id));
+  const hist=loadHistory(),atts=loadAttempts(),detail=new Set(atts.map(a=>a.id)),saved=loadRun(),wrong=wrongPool(atts);
   const total=SECTIONS.reduce((s,d)=>s+d.minutes,0);
   app.innerHTML=`
   <header class="hero">
     <h1>Thi thử Cognitive Test</h1>
     <p class="lead">Bốn phần giống đề tuyển dụng: số học, ngôn ngữ, trừu tượng và tư duy phản biện. Câu hỏi bằng tiếng Anh như đề thật, giải thích đáp án bằng tiếng Việt.</p>
   </header>
+  ${saved?(()=>{const s=saved.sections[saved.si],left=saved.phase==='question'?(s.left??0)/1000:s.secs;
+    return`<section class="sheet resume" aria-label="Bài đang làm dở"><h3>Bạn có bài đang làm dở</h3>
+    <p class="muted">${esc(saved.name)} · ${esc(saved.label)} · lưu lúc ${fmtDate(saved.savedAt)}</p>
+    <p style="margin:8px 0 0">${saved.sections.length>1?`Phần ${saved.si+1}/${saved.sections.length}: `:''}${s.def.name}, ${saved.phase==='question'?`đang ở câu ${saved.qi+1}/${s.qs.length}, còn ${mmss(left)}`:'chưa bắt đầu phần này'}. Đồng hồ được dừng trong lúc bạn rời đi.</p>
+    <div class="row" style="margin-top:14px"><button class="btn" id="resumeBtn">Làm tiếp</button><button class="btn ghost danger" id="dropBtn">Bỏ bài này</button></div></section>`})():''}
   <section class="sheet">
     <label class="namefield"><span>Tên người làm bài</span>
       <input id="who" maxlength="40" autocomplete="name" placeholder="Ví dụ: Nguyễn Văn An" value="${esc(getName())}" aria-describedby="whoErr">
@@ -541,7 +595,7 @@ function home(){
     <table class="structure">
       ${SECTIONS.map((d,i)=>`<tr><td class="n">${i+1}</td><td class="name">${d.name}<span class="vi">${d.vi}</span></td><td class="meta">${d.count} câu<br>${d.minutes} phút</td><td class="act"><button class="btn ghost small" data-practice="${d.key}">Luyện riêng</button></td></tr>`).join('')}
     </table>
-    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button><button class="btn ghost" id="histBtn">Lịch sử luyện tập${hist.length?` (${hist.length})`:''}</button></div>
+    <div class="row"><button class="btn" id="startFull">Thi thử đầy đủ (${total} phút)</button><button class="btn ghost" id="study">Xem đề và đáp án</button>${wrong.length?`<button class="btn ghost" id="reviewBtn">Ôn câu sai (${wrong.length})</button>`:''}<button class="btn ghost" id="histBtn">Lịch sử luyện tập${hist.length?` (${hist.length})`:''}</button></div>
   </section>
   <section class="section-gap">
     <h3 style="margin-bottom:8px">Quy định giống đề thật</h3>
@@ -560,6 +614,9 @@ function home(){
   app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
   const ar=document.getElementById('allRes');if(ar)ar.onclick=historyView;
   document.getElementById('histBtn').onclick=historyView;
+  const rv=document.getElementById('reviewBtn');if(rv)rv.onclick=()=>startReview(wrong);
+  if(saved){document.getElementById('resumeBtn').onclick=()=>resumeRun(saved);
+    document.getElementById('dropBtn').onclick=()=>{if(confirm('Bỏ bài đang làm dở? Kết quả bài này sẽ không được lưu.')){clearRun();home()}}}
   const who=document.getElementById('who');
   who.oninput=()=>{setName(who.value);if(who.value.trim()){who.removeAttribute('aria-invalid');document.getElementById('whoErr').hidden=true}};
   document.getElementById('study').onclick=()=>studyView(level,'num');
@@ -572,11 +629,30 @@ function askName(){
   w.setAttribute('aria-invalid','true');document.getElementById('whoErr').hidden=false;
   w.scrollIntoView({block:'center'});w.focus();
 }
-function start(sections,label){
+function start(sections,label,opts={}){
   const name=getName();
   if(!name){home();askName();return}
-  run={name,label,level,sections:sections.map(s=>({...s,answers:new Array(s.qs.length).fill(null),times:new Array(s.qs.length).fill(null),used:0})),si:0,qi:0,sel:null};
-  intro();
+  if(loadRun()&&!confirm('Bạn đang có bài làm dở. Bắt đầu bài mới thì bài đó sẽ bị bỏ. Tiếp tục?'))return;
+  run={name,label,level:opts.level||level,kind:opts.kind||'test',phase:'intro',sections:sections.map(s=>({...s,answers:new Array(s.qs.length).fill(null),times:new Array(s.qs.length).fill(null),used:0})),si:0,qi:0,sel:null};
+  saveRun();intro();
+}
+function retryAttempt(att){
+  start(att.sections.map(x=>({def:secDef(x.key),qs:x.qs,secs:x.secs})),'Làm lại: '+att.label.replace(/^Làm lại: /,''),{level:att.level,kind:att.kind});
+}
+function startReview(pool){
+  const groups=SECTIONS.map(d=>({def:d,qs:shuffle(pool.filter(x=>x.key===d.key).map(x=>x.q)).slice(0,d.count)})).filter(g=>g.qs.length);
+  if(!groups.length)return;
+  start(groups.map(g=>({...g,secs:Math.max(60,Math.round(g.def.minutes*60/g.def.count*g.qs.length))})),'Ôn câu sai',{level:'mixed',kind:'review'});
+}
+function resumeRun(r){
+  clearInterval(tick);run=r;
+  const s=run.sections[run.si];
+  if(run.phase==='question'){
+    const left=s.left??Math.max(0,s.endAt-run.savedAt);
+    s.endAt=Date.now()+left;s.startAt=s.endAt-s.secs*1000;
+    if(left<=0){endSection();return}
+    question();tick=setInterval(updTimer,250);
+  }else intro();
 }
 function intro(){
   clearInterval(tick);document.onkeydown=null;
@@ -588,16 +664,19 @@ function intro(){
     <p class="muted" style="margin-top:4px">${s.def.vi}</p>
     <p style="font-size:1.1rem;margin:18px 0 6px"><b>${s.qs.length} câu</b> trong <b>${mmss(s.secs)}</b> phút</p>
     <p style="max-width:62ch">${s.def.tip}</p>
-    <div class="row" style="margin-top:20px"><button class="btn" id="go">Bắt đầu phần này</button>${run.si===0?`<button class="btn ghost" id="back">Về trang chính</button>`:''}</div>
+    <div class="row" style="margin-top:20px"><button class="btn" id="go">Bắt đầu phần này</button>${run.si===0?`<button class="btn ghost" id="back">Về trang chính</button>`:`<button class="btn ghost danger" id="finish">Nộp bài, bỏ các phần còn lại</button>`}</div>
   </div>`;
-  document.getElementById('go').onclick=()=>{s.startAt=Date.now();s.endAt=s.startAt+s.secs*1000;run.qi=0;run.sel=null;question();tick=setInterval(updTimer,250)};
-  const b=document.getElementById('back');if(b)b.onclick=home;
+  run.phase='intro';saveRun();
+  document.getElementById('go').onclick=()=>{s.startAt=Date.now();s.endAt=s.startAt+s.secs*1000;run.qi=0;run.sel=null;run.phase='question';question();saveRun();tick=setInterval(updTimer,250)};
+  const b=document.getElementById('back');if(b)b.onclick=()=>{clearRun();home()};
+  const f=document.getElementById('finish');if(f)f.onclick=finishEarly;
   document.getElementById('go').focus();
 }
 function updTimer(){
   const s=run.sections[run.si],left=(s.endAt-Date.now())/1000,el=document.getElementById('timer');
   if(el){el.textContent=mmss(left);el.classList.toggle('low',left<=60)}
   if(left<=0)endSection();
+  else if(Date.now()-lastRunSave>3000)saveRun();
 }
 function qHTML(q){
   if(q.type==='abs')return`
@@ -623,7 +702,7 @@ function question(){
     ${qHTML(q)}
   </div>
   <div class="foot">
-    <button class="btn ghost small" id="skip">Bỏ qua</button>
+    <div class="row" style="gap:8px"><button class="btn ghost small" id="skip">Bỏ qua</button><button class="btn ghost small" id="pause">Tạm dừng</button><button class="btn ghost small danger" id="finish">Nộp bài</button></div>
     <span class="kbd">1–4 để chọn, Enter để trả lời</span>
     <button class="btn" id="ok" disabled>Trả lời</button>
   </div>`;
@@ -632,6 +711,8 @@ function question(){
   btns.forEach(b=>b.onclick=()=>choose(+b.dataset.i));
   document.getElementById('ok').onclick=()=>answer(run.sel);
   document.getElementById('skip').onclick=()=>answer(null);
+  document.getElementById('pause').onclick=()=>{saveRun();home()};
+  document.getElementById('finish').onclick=finishEarly;
   document.onkeydown=e=>{
     if(e.target.tagName==='INPUT')return;
     const k=e.key.toLowerCase();
@@ -642,7 +723,14 @@ function question(){
 }
 function answer(i){
   const s=run.sections[run.si];s.answers[run.qi]=i;s.times[run.qi]=Math.round((Date.now()-run.qStart)/100)/10;
-  if(run.qi<s.qs.length-1){run.qi++;question()}else endSection();
+  if(run.qi<s.qs.length-1){run.qi++;question();saveRun()}else endSection();
+}
+function finishEarly(){
+  const left=run.sections.reduce((n,s,k)=>n+(k<run.si?0:s.answers.slice(k===run.si&&run.phase==='question'?run.qi:0).filter(x=>x===null).length),0);
+  if(!confirm(`Nộp bài ngay và xem kết quả? ${left} câu chưa làm sẽ tính là sai.`))return;
+  clearInterval(tick);document.onkeydown=null;
+  const s=run.sections[run.si];if(run.phase==='question')s.used=Math.min(s.secs,(Date.now()-s.startAt)/1000);
+  run.early=true;results();
 }
 function endSection(){
   clearInterval(tick);document.onkeydown=null;
@@ -650,9 +738,9 @@ function endSection(){
   if(run.si<run.sections.length-1){run.si++;intro()}else results();
 }
 function results(){
-  const a={id:String(Date.now()),t:Date.now(),name:run.name,label:run.label,level:run.level,
+  const a={id:String(Date.now()),t:Date.now(),name:run.name,label:run.label,level:run.level,kind:run.kind||'test',early:!!run.early,
     sections:run.sections.map(s=>({key:s.def.key,secs:s.secs,used:Math.round(s.used),qs:s.qs,answers:s.answers,times:s.times}))};
-  addHistory(summarize(a));saveAttempt(a);showAttempt(a);
+  clearRun();addHistory(summarize(a));saveAttempt(a);showAttempt(a);
 }
 const TIPS={
   num:'Đọc câu hỏi trước rồi mới tìm số liệu. % thay đổi luôn chia cho giá trị ban đầu; tăng rồi giảm thì nhân hệ số.',
@@ -679,14 +767,14 @@ function historyView(){
     const best=rows.reduce((m,e)=>{const s=sc(e);return Math.max(m,pctOf(s.c,s.n))},0);
     const days=new Set(rows.map(e=>new Date(e.t).toDateString())).size;
     const trends=SECTIONS.map(d=>{
-      const v=byLv.filter(e=>e.secs.some(s=>s.key===d.key)).slice(0,20).reverse().map(e=>{const s=e.secs.find(s=>s.key===d.key);return pctOf(s.c,s.n)});
+      const v=byLv.filter(e=>e.kind!=='review'&&e.secs.some(s=>s.key===d.key)).slice(0,20).reverse().map(e=>{const s=e.secs.find(s=>s.key===d.key);return pctOf(s.c,s.n)});
       if(!v.length)return'';
       const last=v[v.length-1],avg=Math.round(v.reduce((a,b)=>a+b,0)/v.length),prev=v.length>1?v[v.length-2]:null,dl=prev===null?0:last-prev;
       return`<div class="trend"><b>${d.name}</b><span class="big">${last}%</span>${spark(v)}<span class="muted">Trung bình ${avg}% · ${v.length} lần gần nhất${prev!==null&&dl?` · <span class="delta ${dl>0?'up':'down'}">${dl>0?'+':''}${dl} điểm so với lần trước</span>`:''}</span></div>`;
     }).join('');
     app.innerHTML=`
     <header class="hero"><h1 style="font-size:clamp(2rem,5vw,2.8rem)">Lịch sử luyện tập</h1>
-      <p class="lead">Lưu tối đa ${HMAX} lần làm trên trình duyệt này. Xem lại chi tiết từng câu được với ${15} lần gần nhất.</p></header>
+      <p class="lead">Lưu tối đa ${HMAX} lần làm trên trình duyệt này, kèm đầy đủ đề và đáp án để xem lại hoặc làm lại.${useIDB?'':' Trình duyệt này không hỗ trợ IndexedDB nên chỉ giữ chi tiết 15 lần gần nhất.'}</p></header>
     <div class="controls" style="margin-top:0">
       <div class="chips" role="group" aria-label="Chọn phần"><button data-sec="all" aria-pressed="${view.sec==='all'}">Tất cả phần</button>${SECTIONS.map(d=>`<button data-sec="${d.key}" aria-pressed="${view.sec===d.key}">${d.name}</button>`).join('')}</div>
       ${names.length>1?`<div class="chips" role="group" aria-label="Người làm"><button data-who="all" aria-pressed="${view.who==='all'}">Mọi người</button>${names.map((n,i)=>`<button data-who="${i}" aria-pressed="${view.who===n}">${n?esc(n):'Chưa có tên'}</button>`).join('')}</div>`:''}
@@ -702,13 +790,13 @@ function historyView(){
         <div class="stat"><b>${mmss(rows.reduce((a,e)=>a+(view.sec==='all'?e.secs.reduce((x,s)=>x+s.used,0):sc(e).used),0))}</b><span>Tổng thời gian</span></div>
         <div class="stat"><b>${days}</b><span>Ngày luyện tập</span></div>
       </div>
-      ${trends?`<h3 style="margin-top:22px">Tiến bộ theo từng phần</h3><div class="trends">${trends}</div>`:''}
+      ${trends?`<h3 style="margin-top:22px">Tiến bộ theo từng phần</h3><p class="muted" style="font-size:.9rem">Không tính các lần ôn câu sai.</p><div class="trends">${trends}</div>`:''}
     </section>
     <section class="sheet section-gap"><table class="hist attempts">${rows.map(e=>{const s=sc(e);return`<tr>
       <td>${fmtDate(e.t)}</td>
-      <td>${e.name?`<b>${esc(e.name)}</b><br>`:''}${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}</span>${e.secs.length>1?`<br><span class="secmini">${e.secs.map(x=>`${secDef(x.key).name.split(' ')[0]} ${x.c}/${x.n}`).join(' · ')}</span>`:''}</td>
+      <td>${e.name?`<b>${esc(e.name)}</b><br>`:''}${esc(e.label)}<br><span class="muted" style="font-size:.88rem">${LEVELS[e.level]}${e.early?' · Nộp sớm':''}</span>${e.secs.length>1?`<br><span class="secmini">${e.secs.map(x=>`${secDef(x.key).name.split(' ')[0]} ${x.c}/${x.n}`).join(' · ')}</span>`:''}</td>
       <td style="text-align:right"><b>${s.c}/${s.n}</b><br><span class="muted" style="font-size:.88rem">${pctOf(s.c,s.n)}%</span></td>
-      <td class="acts">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button>`:''}<button class="btn ghost small danger" data-del="${esc(e.id)}" aria-label="Xóa lần làm ${esc(fmtDate(e.t))}">Xóa</button></td>
+      <td class="acts">${detail.has(e.id)?`<button class="btn ghost small" data-att="${esc(e.id)}">Xem</button><button class="btn ghost small" data-retry="${esc(e.id)}">Làm lại</button>`:''}<button class="btn ghost small danger" data-del="${esc(e.id)}" aria-label="Xóa lần làm ${esc(fmtDate(e.t))}">Xóa</button></td>
     </tr>`}).join('')}</table></section>`
     :`<p class="empty">${all.length?'Không có lần làm nào khớp bộ lọc này.':'Chưa có lần làm nào. Làm một bài thi thử để lịch sử hiện ở đây.'}</p>`}
     <div class="row section-gap">
@@ -722,6 +810,7 @@ function historyView(){
     app.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{view.lv=b.dataset.hl;render()});
     app.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{view.who=b.dataset.who==='all'?'all':names[+b.dataset.who];render()});
     app.querySelectorAll('[data-att]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.att);if(a)showAttempt(a)});
+    app.querySelectorAll('[data-retry]').forEach(b=>b.onclick=()=>{const a=loadAttempts().find(x=>x.id===b.dataset.retry);if(a)retryAttempt(a)});
     app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Xóa lần làm này khỏi lịch sử?')){removeHistory(b.dataset.del);render()}});
     document.getElementById('homeBtn').onclick=home;
     const ex=document.getElementById('exportBtn');if(ex)ex.onclick=()=>{
@@ -738,8 +827,7 @@ function historyView(){
       if(!inH.length&&!inA.length)throw new Error('empty');
       const have=new Set(loadHistory().map(e=>e.id)),added=inH.filter(e=>!have.has(e.id)).length;
       saveHistory([...loadHistory().filter(e=>!inH.some(x=>x.id===e.id)),...inH]);
-      if(inA.length){const ids=new Set(inA.map(a=>String(a.id)));let l=[...loadAttempts().filter(a=>!ids.has(a.id)),...inA.map(a=>({...a,id:String(a.id)}))].sort((a,b)=>b.t-a.t).slice(0,15);
-        while(l.length){try{localStorage.setItem(AKEY,JSON.stringify(l));break}catch(e){l=l.slice(0,-1)}}}
+      inA.forEach(a=>saveAttempt({...a,id:String(a.id)}));
       render();alert(`Đã nhập ${added} lần làm mới.`);
     }).catch(()=>alert('File không đúng định dạng lịch sử của trang này.'))};
   };
@@ -756,7 +844,7 @@ function showAttempt(att){
   <header class="hero">
     <p class="muted">${att.name?`<b>${esc(att.name)}</b> · `:''}${esc(att.label)} · ${LEVELS[att.level]} · ${fmtDate(att.t)}</p>
     <div class="score">${sc.c}<span style="font-size:.45em;color:var(--muted)">/${sc.n}</span></div>
-    <p class="lead">Đúng ${pct}% số câu.${timedOut?` ${timedOut} câu chưa kịp làm vì hết giờ.`:''}</p>
+    <p class="lead">Đúng ${pct}% số câu.${timedOut?(att.early?` Nộp bài sớm, ${timedOut} câu chưa làm.`:` ${timedOut} câu chưa kịp làm vì hết giờ.`):att.early?' Nộp bài sớm.':''}</p>
   </header>
   <section class="sheet">
     ${att.sections.map(s=>{const d=secDef(s.key),c=s.qs.filter((q,i)=>s.answers[i]===q.ans).length,tt=s.times.filter(x=>x!==null),avg=tt.length?Math.round(tt.reduce((a,b)=>a+b,0)/tt.length):0;
@@ -766,7 +854,7 @@ function showAttempt(att){
       <div class="stat"><b>${skipped}</b><span>Chưa trả lời</span></div>
       <div class="stat"><b>${mmss(used)}</b><span>Tổng thời gian / ${mmss(total)}</span></div>
     </div>
-    <div class="row" style="margin-top:20px"><button class="btn" id="again">Làm đề mới cùng cấu trúc</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Lịch sử</button></div>
+    <div class="row" style="margin-top:20px">${sc.c<sc.n?`<button class="btn" id="reviewThis">Ôn ${sc.n-sc.c} câu sai của bài này</button>`:''}<button class="btn${sc.c<sc.n?' ghost':''}" id="again">${att.kind==='review'?'Ôn tiếp câu sai':'Làm đề mới cùng cấu trúc'}</button><button class="btn ghost" id="retryBtn">Làm lại đúng đề này</button><button class="btn ghost" id="homeBtn">Về trang chính</button><button class="btn ghost" id="listBtn">Lịch sử</button></div>
   </section>
   <div class="controls">
     <div class="chips" role="group" aria-label="Chọn phần">${att.sections.length>1?`<button data-sec="all" aria-pressed="true">Tất cả phần</button>`:''}${att.sections.map((s,k)=>`<button data-sec="${s.key}" aria-pressed="${att.sections.length===1}">${secDef(s.key).name}</button>`).join('')}</div>
@@ -777,7 +865,7 @@ function showAttempt(att){
   const opt=(q,a,j,inner)=>`<li class="${j===q.ans?'is-ans':''} ${j===a&&j!==q.ans?'is-wrong':''}"><span class="k">${'ABCD'[j]}</span>${inner}${j===q.ans?'<em>Đáp án đúng</em>':j===a?'<em>Bạn chọn</em>':''}</li>`;
   const card=(s,i)=>{
     const q=s.qs[i],a=s.answers[i],st=status(s,i),t=s.times[i];
-    const resTxt=st==='ok'?'Đúng':st==='bad'?'Sai':(t===null?'Hết giờ, chưa làm':'Bỏ qua');
+    const resTxt=st==='ok'?'Đúng':st==='bad'?'Sai':(t===null?(att.early?'Chưa làm':'Hết giờ, chưa làm'):'Bỏ qua');
     let body='';
     if(q.type==='abs')body=`<p style="margin-bottom:8px"><b>Which figure comes next?</b></p><div class="mini"><div class="seq">${q.seq.map(x=>`<div class="panel">${panelSVG(x)}</div>`).join('')}<div class="panel q">?</div></div></div>
       <ul class="ro abs">${q.opts.map((o,j)=>opt(q,a,j,`<div class="panel">${panelSVG(o)}</div>`)).join('')}</ul>`;
@@ -810,7 +898,9 @@ function showAttempt(att){
   app.querySelectorAll('[data-sec]').forEach(b=>b.onclick=()=>{view.sec=b.dataset.sec;app.querySelectorAll('[data-sec]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()});
   app.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{view.filter=b.dataset.f;app.querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed',x===b));draw()});
   draw();
-  document.getElementById('again').onclick=()=>{level=att.level;start(SECTIONS.filter(d=>att.sections.some(s=>s.key===d.key)).map(d=>({def:d,qs:build(d,att.level),secs:d.minutes*60})),att.label)};
+  document.getElementById('retryBtn').onclick=()=>retryAttempt(att);
+  const rt=document.getElementById('reviewThis');if(rt)rt.onclick=()=>startReview(wrongPool([att]));
+  document.getElementById('again').onclick=()=>{if(att.kind==='review'){const w=wrongPool(loadAttempts());if(w.length)startReview(w);else{alert('Không còn câu sai nào để ôn.');home()}return}level=att.level;start(SECTIONS.filter(d=>att.sections.some(s=>s.key===d.key)).map(d=>({def:d,qs:build(d,att.level),secs:d.minutes*60})),att.label)};
   document.getElementById('homeBtn').onclick=home;
   document.getElementById('listBtn').onclick=historyView;
   window.scrollTo(0,0);
@@ -846,7 +936,7 @@ function studyView(lv,secKey){
   document.getElementById('homeBtn').onclick=home;
   window.scrollTo(0,0);
 }
-home();
+initAttempts().finally(home);
 </script>
 </body>
 </html>
