@@ -941,7 +941,39 @@ new MutationObserver(()=>{const show=!run&&!document.getElementById('startFull')
 let level='mixed',run=null,tick=null;
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 
+/* ---------- nút Back của trình duyệt ----------
+   Mỗi màn ghi một mục vào lịch sử trình duyệt; trang chính luôn là gốc (d=0).
+   Đổi bộ lọc trong cùng một màn thì ghi đè mục hiện tại; màn kết quả thay chỗ màn làm bài. */
+let restoring=false,ignorePop=false;
+function pushView(st){
+  if(restoring)return;
+  const cur=history.state||{v:'home',d:0};
+  if(st.v==='home'){
+    if(cur.d>0){ignorePop=true;history.go(-cur.d)}else history.replaceState({v:'home',d:0},'');
+    return;
+  }
+  if(cur.v===st.v||(cur.v==='test'&&st.v==='attempt'))history.replaceState({...st,d:cur.d},'');
+  else history.pushState({...st,d:cur.d+1},'');
+}
+async function route(st){
+  restoring=true;
+  try{
+    if(st.v==='history')historyView();
+    else if(st.v==='guide')guideView();
+    else if(st.v==='study')studyView(st.lv||'mixed',st.sec||'num');
+    else if(st.v==='attempt'){const a=await getDetail(st.id);restoring=true;if(a)showAttempt(a);else home()}
+    else if(st.v==='test'){const r=loadRun();if(r)resumeRun(r);else home()}
+    else home();
+  }finally{restoring=false}
+}
+addEventListener('popstate',e=>{
+  if(ignorePop){ignorePop=false;return}
+  if(run)saveRun(); // rời bài đang làm bằng nút Back thì coi như tạm dừng
+  route(e.state||{v:'home',d:0});
+});
+
 function home(){
+  pushView({v:'home'});
   clearInterval(tick);run=null;document.onkeydown=null;
   window.scrollTo(0,0);
   const hist=loadHistory(),atts=loadAttempts(),detail=new Set(atts.map(a=>a.id)),saved=loadRun(),wrong=wrongPool(atts);
@@ -1019,6 +1051,7 @@ function startReview(pool){
   start(groups.map(g=>({...g,secs:Math.max(60,Math.round(g.def.minutes*60/g.def.count*g.qs.length))})),'Ôn câu sai',{level:'mixed',kind:'review'});
 }
 function resumeRun(r){
+  pushView({v:'test'});
   clearInterval(tick);run=r;
   const s=run.sections[run.si];
   if(run.phase==='question'){
@@ -1029,6 +1062,7 @@ function resumeRun(r){
   }else intro();
 }
 function intro(){
+  pushView({v:'test'});
   clearInterval(tick);document.onkeydown=null;
   const s=run.sections[run.si],multi=run.sections.length>1;
   app.innerHTML=`
@@ -1128,6 +1162,7 @@ function spark(v){
   return`<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${w}" y1="${y(50)}" y2="${y(50)}"/>${v.length>1?`<polyline points="${v.map((n,i)=>x(i).toFixed(1)+','+y(n).toFixed(1)).join(' ')}"/>`:''}<circle cx="${x(v.length-1).toFixed(1)}" cy="${y(v[v.length-1]).toFixed(1)}" r="3"/></svg>`;
 }
 function historyView(){
+  pushView({v:'history'});
   clearInterval(tick);document.onkeydown=null;run=null;
   const view={sec:'all',lv:'all',who:'all'};
   const render=()=>{
@@ -1215,6 +1250,7 @@ function historyView(){
   if(HAS_API)syncPending().then(fetchRemote).then(()=>{if(document.getElementById('histRoot'))render()});
 }
 function showAttempt(att){
+  pushView({v:'attempt',id:att.id});
   clearInterval(tick);document.onkeydown=null;run=null;
   const view={sec:'all',filter:'all'};
   const sc=scoreOf(att),pct=Math.round(sc.c/sc.n*100);
@@ -1485,6 +1521,7 @@ const GUIDE_SRC=[
  ['PracticeAptitudeTests: Watson Glaser','https://www.practiceaptitudetests.com/testing-publishers/watson-glaser/'],
 ];
 function guideView(focus){
+  pushView({v:'guide'});
   clearInterval(tick);document.onkeydown=null;run=null;
   const absEx=x=>`<p><b>${ABS_TEXT[x.form]||'Which figure comes next?'}</b></p><div class="mini">${absStem(x)}</div>
     <ul class="ro abs">${x.opts.map((o,j)=>`<li${j===x.ans?' class="is-ans"':''}><span class="k">${'ABCD'[j]}</span><div class="panel">${panelSVG(o)}</div>${j===x.ans?'<em>Đáp án đúng</em>':''}</li>`).join('')}</ul>`;
@@ -1573,6 +1610,7 @@ function passageCard(p,lv,i){
     <ol class="vlist">${p.s.map(([st,a,e])=>`<li><p><b>${esc(st)}</b> <span class="vans v-${cls[a]}">${a}</span></p><p class="muted">${esc(e)}</p></li>`).join('')}</ol></article>`;
 }
 function studyView(lv,secKey){
+  pushView({v:'study',lv,sec:secKey});
   clearInterval(tick);document.onkeydown=null;run=null;
   if(lv!=='mixed')level=lv;
   const view={lv:LVS.includes(lv)?lv:'all'},d=secDef(secKey),N=3;
@@ -1613,7 +1651,7 @@ function studyView(lv,secKey){
   draw();window.scrollTo(0,0);
 }
 
-initAttempts().finally(()=>{backfillUploads();home();syncPending()});
+initAttempts().finally(()=>{backfillUploads();const st=history.state;if(st&&st.v&&st.v!=='home')route(st);else home();syncPending()});
 addEventListener('online',()=>syncPending());
 </script>
 </body>
