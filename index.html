@@ -135,10 +135,18 @@ details.review summary{cursor:pointer; font-weight:700; color:var(--ink); font-f
 .stat b{display:block; font-family:var(--display); font-size:1.4rem; color:var(--ink); font-variant-numeric:tabular-nums}
 .stat span{font-size:.9rem; color:var(--muted)}
 .controls{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--paper); padding:12px 0 10px; border-bottom:1px solid var(--line); margin-top:26px}
-.fab{position:fixed; right:max(16px, env(safe-area-inset-right)); bottom:max(16px, env(safe-area-inset-bottom)); z-index:20; border:2px solid var(--ink); background:var(--ink); color:var(--card); border-radius:999px; padding:12px 20px; font-weight:700; font-size:1rem; box-shadow:0 6px 20px rgba(0,0,0,.22)}
-.fab:hover{filter:brightness(1.08)}
-.fab:focus-visible{outline:3px solid var(--mark); outline-offset:2px}
-body.has-fab .wrap{padding-bottom:96px}
+.topbar{position:sticky; top:0; z-index:30; height:56px; padding:0 20px; padding-top:env(safe-area-inset-top,0px); box-sizing:content-box; background:var(--card); border-bottom:1.5px solid var(--line); box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.topbar[hidden]{display:none}
+.topbar .in{max-width:820px; height:56px; margin:0 auto; display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px}
+.tb-back{display:inline-flex; align-items:center; gap:6px; border:2px solid var(--ink); background:var(--ink); color:var(--card); border-radius:999px; padding:7px 16px 7px 12px; font-weight:700; font-size:.98rem; white-space:nowrap}
+.tb-back:hover{filter:brightness(1.08)}
+.tb-back:focus-visible{outline:3px solid var(--mark); outline-offset:2px}
+.tb-back svg{width:18px; height:18px}
+.tb-title{font-family:var(--display); font-weight:700; color:var(--ink); font-size:1.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center}
+.tb-spacer{width:1px}
+body.has-bar .controls{top:calc(57px + env(safe-area-inset-top,0px))}
+body.has-bar .gsec,body.has-bar .gtype,body.has-bar .qcard{scroll-margin-top:150px}
+@media (max-width:560px){.topbar{padding:0 14px} .tb-title{font-size:.95rem; text-align:right} .tb-spacer{display:none} .topbar .in{grid-template-columns:auto minmax(0,1fr)}}
 .chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px}
 .chips button{flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); border-radius:999px; padding:5px 12px; font-size:.92rem; font-weight:600}
 .chips button[aria-pressed="true"]{border-color:var(--ink); background:var(--ink); color:var(--card)}
@@ -221,8 +229,11 @@ a{color:var(--ink); text-underline-offset:2px}
 </style>
 </head>
 <body>
+<nav class="topbar" id="topbar" aria-label="Điều hướng" hidden><div class="in">
+  <button class="tb-back" data-home><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Trang chính</button>
+  <span class="tb-title" id="tbTitle"></span><span class="tb-spacer"></span>
+</div></nav>
 <main class="wrap" id="app" aria-live="polite"></main>
-<button class="fab" id="fabHome" data-home hidden>⌂ Trang chính</button>
 
 <script>
 /* ---------- helpers ---------- */
@@ -923,9 +934,10 @@ const scoreOf=a=>{let c=0,n=0;a.sections.forEach(s=>s.qs.forEach((q,i)=>{n++;if(
 const app=document.getElementById('app');
 // Nút "← Trang chính" trên thanh dính đầu trang của các màn dài
 document.addEventListener('click',e=>{if(e.target.closest('[data-home]'))home()});
-// Nút nổi ở góc: ẩn ở trang chính và trong lúc làm bài (đã có nút Tạm dừng)
-const fab=document.getElementById('fabHome');
-new MutationObserver(()=>{const show=!run&&!document.getElementById('startFull');fab.hidden=!show;document.body.classList.toggle('has-fab',show)}).observe(app,{childList:true});
+// Thanh trên cùng có nút về trang chính và tên trang; ẩn ở trang chính và trong lúc làm bài (đã có nút Tạm dừng)
+const topbar=document.getElementById('topbar'),tbTitle=document.getElementById('tbTitle');
+new MutationObserver(()=>{const show=!run&&!document.getElementById('startFull');topbar.hidden=!show;document.body.classList.toggle('has-bar',show);
+  const h=app.querySelector('h1');tbTitle.textContent=h?h.textContent:'Kết quả bài làm'}).observe(app,{childList:true});
 let level='mixed',run=null,tick=null;
 const mmss=s=>{s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 
