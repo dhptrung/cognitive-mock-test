@@ -2,7 +2,7 @@
 
 Trang thi thử Cognitive Test gồm 4 phần: Numerical (12 câu/10 phút), Verbal (15 câu/10 phút), Abstract (50 câu/10 phút), Critical Thinking (16 câu/12 phút).
 
-Trang tĩnh, chỉ gồm `index.html`, không cần build hay backend.
+Giao diện là trang tĩnh `index.html`. Lịch sử được lưu lên server qua một API nhỏ `api/attempts.js` (Vercel Function + Vercel Blob).
 
 Tính năng:
 
@@ -12,7 +12,16 @@ Tính năng:
 - Lịch sử: tối đa 500 lần làm, mỗi lần lưu đủ đề, đáp án đã chọn và thời gian từng câu để xem lại hoặc làm lại đúng đề đó. Có biểu đồ tiến bộ theo từng phần, lọc theo phần/người làm/mức độ, xóa, xuất/nhập file JSON.
 - Ôn câu sai: gom các câu làm sai hoặc chưa làm thành một đề riêng; ôn đúng câu nào thì câu đó rời khỏi danh sách.
 
-Dữ liệu chỉ lưu trên trình duyệt (tóm tắt trong `localStorage`, chi tiết trong IndexedDB), không gửi lên server. Xóa dữ liệu trình duyệt là mất lịch sử, trừ khi đã xuất file.
+Lưu trữ:
+
+- Mỗi lần làm được lưu trên máy (tóm tắt trong `localStorage`, chi tiết trong IndexedDB) và gửi lên server. Mất mạng thì bài nằm trong hàng đợi, tự gửi lại khi mở trang lần sau.
+- Trên server mỗi lần làm là 2 file JSON trong Vercel Blob: `attempts/<id>.json` (đầy đủ đề và đáp án) và `summaries/<id>.json` (tóm tắt).
+- Ai mở trang cũng xem được lịch sử của mọi người, gồm tên và kết quả. Chỉ máy đã gửi bài mới xóa được bài đó.
+- Mở trực tiếp `index.html` (file://) thì chỉ lưu trên máy.
 
 - Chạy thử trên máy: mở `index.html` bằng trình duyệt.
-- Deploy: import repo này vào Vercel, Framework Preset chọn "Other", không cần Build Command.
+- Deploy lên Vercel:
+  1. Import repo này vào Vercel, Framework Preset chọn "Other", để trống Build Command và Output Directory.
+  2. Vào project → Storage → Create Database → Blob, chọn **Private**, rồi Connect vào project. Vercel tự thêm biến `BLOB_READ_WRITE_TOKEN`.
+     Nếu tạo store loại Public thì thêm biến môi trường `BLOB_ACCESS=public`.
+  3. Redeploy để API nhận biến môi trường.
